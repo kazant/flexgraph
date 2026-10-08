@@ -9,6 +9,7 @@ import { setLicenseKey, getLicenseState, onLicenseChange, ensureLicense } from '
 import { applyLicenseUI } from './license/watermark.js';
 import { _lg } from './license/gate.js';
 import { segmentHitsRect } from './routing/geometry.js';
+import { highlightSet } from './highlight.js';
 import { VERSION } from './version.js';
 import * as metrics from './metrics.js';
 
@@ -382,19 +383,9 @@ export class GraphView {
     r.world.classList.toggle('fg-hovering', !!tgt);
     if (!tgt) return;
     const mark = (e) => { if (e) { e.classList.add('fg-hl'); this._hl.push(e); } };
-    if (tgt.kind === 'node') {
-      mark(r.nodeEls.get(tgt.id));
-      for (const e of this.model.edges) {
-        if (e.source !== tgt.id && e.target !== tgt.id) continue;
-        mark(r.edgeEls.get(e.id)); mark(r.labelEls.get(e.id));
-        mark(r.nodeEls.get(e.source)); mark(r.nodeEls.get(e.target));
-      }
-    } else {
-      const e = this.model.edgeById.get(tgt.id);
-      if (!e) return;
-      mark(r.edgeEls.get(e.id)); mark(r.labelEls.get(e.id));
-      mark(r.nodeEls.get(e.source)); mark(r.nodeEls.get(e.target));
-    }
+    const hl = highlightSet(this.model.edges, tgt, this.options.hoverHighlight);
+    for (const id of hl.nodes) mark(r.nodeEls.get(id));
+    for (const id of hl.edges) { mark(r.edgeEls.get(id)); mark(r.labelEls.get(id)); }
     this._emit('hover', tgt ? { kind: tgt.kind, id: tgt.id } : null);
   }
 

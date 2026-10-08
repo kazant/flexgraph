@@ -33,6 +33,7 @@ export const DEFAULT_OPTIONS = Object.freeze({
   maxZoom: 4,
   controls: true,
   showPorts: true,
+  hoverHighlight: 'chain', // 'chain' (whole upstream + downstream path) or 'neighbors'
   edgeTypes: {
     default: { markerEnd: 'arrow' },
     'has-many': { markerStart: 'one', markerEnd: 'many' },

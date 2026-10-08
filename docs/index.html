@@ -73,6 +73,7 @@ const view = createGraph(document.getElementById("graph"), data, { direction: "L
     <tr><td><code>nodeSpacing</code> / <code>rankSpacing</code> / <code>edgeSpacing</code></td><td>40 / 80 / 10</td><td>px</td></tr>
     <tr><td><code>cornerRadius</code>, <code>lineHops</code></td><td>6, true</td><td>Rounded bends; arcs where lines must cross</td></tr>
     <tr><td><code>animate</code>, <code>pinOnDrag</code></td><td>true, true</td><td></td></tr>
+    <tr><td><code>hoverHighlight</code></td><td><code>"chain"</code></td><td><code>chain</code>: hovering lights up the whole path from start to end; <code>neighbors</code>: only direct connections</td></tr>
     <tr><td><code>renderNode(node, el)</code></td><td></td><td>Custom node content (HTML string or element)</td></tr>
     <tr><td><code>onNodeClick</code>, <code>onEdgeClick</code></td><td></td><td>Click callbacks</td></tr>
     <tr><td><code>worker</code></td><td></td><td>URL of <code>flexgraph.worker.js</code> to lay out large graphs off the main thread</td></tr>
@@ -122,8 +123,9 @@ view.on("nodeclick", ({ node }) => …)</pre>
 <footer>© FlexGraph Labs AS · <a href="../LICENSE.md">License (EULA)</a> · <a href="TERMS.md">Terms</a> · <a href="PRIVACY.md">Privacy</a></footer>
 
 <script type="module">
-  import { createGraph } from '../src/index.js';
+  import { createGraph, setLicenseKey } from '../src/index.js';
   import { grouped } from '../demo/samples.js';
+  setLicenseKey('FG-PRJ-DEMO-SHOW-CASE-0001'); // dummy key until the license server is live
   createGraph(document.getElementById('live'), grouped(), { controls: true });
 </script>
 </body>

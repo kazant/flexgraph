@@ -3,7 +3,8 @@ import { SAMPLES } from './samples.js';
 
 // On localhost no key is needed (Development mode). In production:
 // setLicenseKey('FG-PRJ-XXXX-XXXX-XXXX-XXXX');
-setLicenseKey(new URLSearchParams(location.search).get('key') || null);
+// Dummy showcase key until the license server is live (localhost ignores it).
+setLicenseKey(new URLSearchParams(location.search).get('key') || 'FG-PRJ-DEMO-SHOW-CASE-0001');
 
 const $ = (id) => document.getElementById(id);
 const sampleSel = $('sample');
@@ -31,6 +32,7 @@ function load(name) {
     renderNode,
     lineHops: $('hops').checked,
     animate: $('animate').checked,
+    hoverHighlight: $('hover').value,
     onNodeClick: (node) => { $('s-msg').textContent = `Clicked node "${node.label ?? node.id}"`; },
     onEdgeClick: (edge) => { $('s-msg').textContent = `Clicked edge ${edge.source} → ${edge.target}${edge.type ? ' (' + edge.type + ')' : ''}`; }
   });
@@ -53,6 +55,7 @@ sampleSel.onchange = () => load(sampleSel.value);
 $('direction').onchange = () => timed(() => view.setOptions({ direction: $('direction').value }));
 $('routing').onchange = () => timed(() => view.setOptions({ edgeRouting: $('routing').value }));
 $('hops').onchange = () => view.setOptions({ lineHops: $('hops').checked }, { relayout: false }).then(stats);
+$('hover').onchange = () => view.setOptions({ hoverHighlight: $('hover').value }, { relayout: false });
 $('animate').onchange = () => view.setOptions({ animate: $('animate').checked }, { relayout: false });
 $('relayout').onclick = () => timed(() => view.relayout());
 $('unpin').onclick = () => { view.unpinAll(); timed(() => view.relayout()); };

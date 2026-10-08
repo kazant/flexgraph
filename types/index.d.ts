@@ -103,6 +103,8 @@ export interface GraphOptions {
   maxZoom: number;
   controls: boolean;
   showPorts: boolean;
+  /** Hover highlighting: 'chain' (default) lights up the whole path from start to end, 'neighbors' only direct connections. */
+  hoverHighlight: 'chain' | 'neighbors';
   edgeTypes: Record<string, { markerStart?: MarkerName | null; markerEnd?: MarkerName | null }>;
   /** URL of dist/flexgraph.worker.js to run layout + routing in a Web Worker. */
   worker?: string | URL;
