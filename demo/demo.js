@@ -13,6 +13,8 @@ sampleSel.value = new URLSearchParams(location.search).get('sample') || 'erd';
 
 let data, view, added = 0;
 
+const names = (list) => list.length ? list.map((x) => x.label ?? x.id).join(", ") : "none";
+
 function renderNode(n) {
   if (!n.columns) return undefined; // default template
   const rows = n.columns.map((c) => `<div class="erd__row"><span>${c}</span><span>${c === 'id' ? 'PK' : c.endsWith('_id') ? 'FK' : ''}</span></div>`).join('');
@@ -33,7 +35,7 @@ function load(name) {
     lineHops: $('hops').checked,
     animate: $('animate').checked,
     hoverHighlight: $('hover').value,
-    onNodeClick: (node) => { $('s-msg').textContent = `Clicked node "${node.label ?? node.id}"`; },
+    onNodeClick: (node, ev, { previous, next }) => { $('s-msg').textContent = `Clicked "${node.label ?? node.id}" · previous: ${names(previous)} · next: ${names(next)}`; },
     onEdgeClick: (edge) => { $('s-msg').textContent = `Clicked edge ${edge.source} → ${edge.target}${edge.type ? ' (' + edge.type + ')' : ''}`; }
   });
   view.on('layout', () => stats());

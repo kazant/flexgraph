@@ -42,11 +42,13 @@ const view = createGraph(document.getElementById("graph"), {
 }, {
   direction: "LR",
   edgeRouting: "orthogonal",    // "orthogonal" | "straight" | "curved"
-  onNodeClick: (node) => console.log(node)
+  onNodeClick: (node, event, { previous, next }) =>
+    console.log(node.label, "previous:", previous.map((n) => n.label), "next:", next.map((n) => n.label))
 });
 
 view.relayout();               // full auto layout (respects pins)
 view.updateGraph(newData);     // incremental: existing nodes stay put
+view.getConnections("b");      // { previous: [nodeA], next: [], incoming, outgoing }; { chain: true } for the whole chain
 view.exportState();            // positions, pins, zoom and the exact edge lines as JSON
 view.importState(saved);       // recreates the saved picture, lines included
 ```

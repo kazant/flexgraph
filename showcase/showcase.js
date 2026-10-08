@@ -7,6 +7,7 @@ setLicenseKey('FG-PRJ-DEMO-SHOW-CASE-0001');
 
 const WORKER_URL = new URL('../src/worker.js', import.meta.url);
 const $ = (sel, root = document) => root.querySelector(sel);
+const names = (list) => list.length ? list.map((x) => x.label ?? x.id).join(", ") : "none";
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 $('#version').textContent = 'v' + VERSION;
@@ -55,7 +56,7 @@ function mount(ex, article) {
   const { data, options, className } = ex.make(WORKER_URL);
   if (className) graphEl.classList.add(className);
   const t0 = performance.now();
-  const view = createGraph(graphEl, data, { ...options, onNodeClick: (n) => { statsEl.textContent = `Clicked "${n.label ?? n.id}"`; } });
+  const view = createGraph(graphEl, data, { ...options, onNodeClick: (n, ev, { previous, next }) => { statsEl.textContent = `Clicked "${n.label ?? n.id}" · previous: ${names(previous)} · next: ${names(next)}`; } });
   const stats = (ms) => {
     const L = view.getLayout();
     statsEl.innerHTML = `<b>${L.nodes.size}</b> nodes · <b>${L.edges.size}</b> edges · <b>${metrics.countCrossings(L.edges)}</b> crossings · ` +

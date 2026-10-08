@@ -146,6 +146,35 @@ export class GraphView {
   }
   getSelection() { return this.selected; }
 
+  /**
+   * Nodes directly before (edges into id) and after (edges out of id) a node, as the original node objects.
+   * With { chain: true }, everything upstream / downstream instead (the same set the hover highlight shows).
+   */
+  getConnections(id, { chain = false } = {}) {
+    if (!this.model || !this.model.nodeById.has(id)) return null;
+    const edges = this.model.edges;
+    const walk = (dir) => {
+      const seen = new Set([id]), out = [], queue = [id];
+      while (queue.length) {
+        const cur = queue.shift();
+        for (const e of edges) {
+          const from = dir === 'next' ? e.source : e.target, to = dir === 'next' ? e.target : e.source;
+          if (from !== cur || seen.has(to)) continue;
+          seen.add(to); out.push(to);
+          if (chain) queue.push(to);
+        }
+      }
+      return out.map((n) => this.model.nodeById.get(n).data);
+    };
+    const data = (e) => e.data;
+    return {
+      previous: walk('previous'),
+      next: walk('next'),
+      incoming: edges.filter((e) => e.target === id).map(data),
+      outgoing: edges.filter((e) => e.source === id).map(data)
+    };
+  }
+
   fit({ padding = 40, maxZoom = 1 } = {}) {
     const vp = this.renderer.viewport;
     const b = boundsOf({ nodes: this.positions, groups: this._groups || new Map() });
@@ -365,8 +394,9 @@ export class GraphView {
     if (tgt.kind === 'node') {
       this.select({ kind: 'node', id: tgt.id });
       const n = this.model.nodeById.get(tgt.id);
-      this.options.onNodeClick?.(n.data, ev);
-      this._emit('nodeclick', { node: n.data, event: ev });
+      const c = this.getConnections(tgt.id);
+      this.options.onNodeClick?.(n.data, ev, c);
+      this._emit('nodeclick', { node: n.data, event: ev, previous: c.previous, next: c.next });
     } else if (tgt.kind === 'edge') {
       this.select({ kind: 'edge', id: tgt.id });
       const e = this.model.edgeById.get(tgt.id);

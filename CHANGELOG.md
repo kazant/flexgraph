@@ -5,6 +5,9 @@ All notable changes to this project are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- Node clicks now include the neighbouring nodes: `onNodeClick(node, event, { previous, next })` and
+  `nodeclick` events get `previous` / `next`. New `view.getConnections(id, { chain })` returns them on demand
+  (direct neighbours, or the whole upstream/downstream chain).
 - `hoverHighlight` option: `"chain"` (default) highlights the whole upstream and downstream chain of the
   hovered node or edge; `"neighbors"` keeps the previous direct-connections behaviour.
 - `exportState()` now also saves the exact edge lines (`edges`) and the routing mode; `importState()`

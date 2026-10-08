@@ -110,7 +110,8 @@ export interface GraphOptions {
   worker?: string | URL;
   /** Custom node content. Return an HTML string, an element, or nothing (to fill `el` yourself). */
   renderNode?: (node: NodeSpec, el: HTMLElement) => string | Node | void | null;
-  onNodeClick?: (node: NodeSpec, event: PointerEvent) => void;
+  /** `connections.previous` / `connections.next`: the nodes directly before and after the clicked node. */
+  onNodeClick?: (node: NodeSpec, event: PointerEvent, connections: Connections) => void;
   onEdgeClick?: (edge: EdgeSpec, event: PointerEvent) => void;
   onBackgroundClick?: (event: PointerEvent) => void;
 }
@@ -132,7 +133,7 @@ export interface GraphEvents {
   layout: { crossings: number };
   select: Selection | null;
   hover: Selection | null;
-  nodeclick: { node: NodeSpec; event: PointerEvent };
+  nodeclick: { node: NodeSpec; event: PointerEvent; previous: NodeSpec[]; next: NodeSpec[] };
   edgeclick: { edge: EdgeSpec; event: PointerEvent };
   groupclick: { group: GroupSpec; event: PointerEvent };
   dragstart: { id: string };
@@ -143,6 +144,15 @@ export interface GraphEvents {
   viewport: { x: number; y: number; k: number };
   license: LicenseState;
   animationend: void;
+}
+
+export interface Connections {
+  /** Nodes with an edge into this node (with { chain: true }: everything upstream). */
+  previous: NodeSpec[];
+  /** Nodes this node has an edge to (with { chain: true }: everything downstream). */
+  next: NodeSpec[];
+  incoming: EdgeSpec[];
+  outgoing: EdgeSpec[];
 }
 
 export interface GraphView {
@@ -158,6 +168,8 @@ export interface GraphView {
   unpinAll(): void;
   select(sel: string | Selection | null): void;
   getSelection(): Selection | null;
+  /** Previous / next nodes of a node (direct, or the whole chain with { chain: true }). null if the id is unknown. */
+  getConnections(id: string, opts?: { chain?: boolean }): Connections | null;
   fit(opts?: { padding?: number; maxZoom?: number }): void;
   zoomBy(factor: number): void;
   zoomTo(k: number): void;

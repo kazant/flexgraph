@@ -75,7 +75,7 @@ const view = createGraph(document.getElementById("graph"), data, { direction: "L
     <tr><td><code>animate</code>, <code>pinOnDrag</code></td><td>true, true</td><td></td></tr>
     <tr><td><code>hoverHighlight</code></td><td><code>"chain"</code></td><td><code>chain</code>: hovering lights up the whole path from start to end; <code>neighbors</code>: only direct connections</td></tr>
     <tr><td><code>renderNode(node, el)</code></td><td></td><td>Custom node content (HTML string or element)</td></tr>
-    <tr><td><code>onNodeClick</code>, <code>onEdgeClick</code></td><td></td><td>Click callbacks</td></tr>
+    <tr><td><code>onNodeClick(node, event, { previous, next })</code>, <code>onEdgeClick</code></td><td></td><td>Click callbacks. <code>previous</code> / <code>next</code> are the nodes directly before and after the clicked node</td></tr>
     <tr><td><code>worker</code></td><td></td><td>URL of <code>flexgraph.worker.js</code> to lay out large graphs off the main thread</td></tr>
   </table>
   <h3>Methods</h3>
@@ -84,7 +84,9 @@ view.updateGraph(data)     // incremental: existing nodes stay where they are
 view.exportState()         // { nodes: { id: { x, y, pinned } }, edges: { id: [[x, y], …] }, transform }
 view.importState(state)
 view.pin(id) / view.unpin(id) / view.fit() / view.zoomBy(1.2) / view.select(id)
-view.on("nodeclick", ({ node }) => …)</pre>
+view.on("nodeclick", ({ node, previous, next }) => …)
+view.getConnections(id)                 // { previous, next, incoming, outgoing }
+view.getConnections(id, { chain: true }) // everything upstream / downstream</pre>
   <h3>Saving a layout</h3>
   <p>Users can drag nodes until the lines run the way they want. <code>exportState()</code> returns plain JSON with the node positions, pins, zoom and the exact edge lines. Store it anywhere (your database, <code>localStorage</code>, a file) and pass it to <code>importState()</code> to recreate the same picture. If a node has changed size since it was saved (other fonts, edited labels), the lines on that node are routed fresh instead.</p>
   <pre>// save
