@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:site",
+  "outputDirectory": "site",
+  "redirects": [{ "source": "/", "destination": "/showcase/", "permanent": false }],
+  "headers": [
+    { "source": "/(.*)\\.md", "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }] }
+  ]
+}

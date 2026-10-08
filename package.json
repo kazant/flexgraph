@@ -1,0 +1,44 @@
+{
+  "name": "@flexgraph-labs/flexgraph",
+  "version": "1.0.0",
+  "description": "Flexible relationship graph for the browser: layered layout with strong crossing minimization, ports, orthogonal edge routing with obstacle avoidance, groups and constraints. Plain HTML, CSS & JS.",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "type": "module",
+  "main": "./dist/flexgraph.umd.cjs",
+  "module": "./dist/flexgraph.esm.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/flexgraph.esm.js",
+      "require": "./dist/flexgraph.umd.cjs"
+    },
+    "./worker": "./dist/flexgraph.worker.js",
+    "./style.css": "./css/graph.css"
+  },
+  "files": ["dist", "css", "types", "LICENSE.md", "README.md", "CHANGELOG.md"],
+  "sideEffects": ["*.css"],
+  "publishConfig": {
+    "registry": "https://npm.flexgraph.example/"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "build:trial": "node scripts/build.mjs --trial",
+    "build:site": "node scripts/build-site.mjs",
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:server": "node --test \"server/test/**/*.test.js\"",
+    "compare": "node scripts/compare-dagre.mjs",
+    "keys": "node scripts/generate-keys.mjs",
+    "prepublishOnly": "npm test && npm run build",
+    "publish:private": "node scripts/publish-private.mjs"
+  },
+  "devDependencies": {
+    "dagre": "0.8.5",
+    "esbuild": "0.24.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": ["graph", "diagram", "layout", "dagre", "erd", "flowchart", "orthogonal-routing", "sugiyama"]
+}

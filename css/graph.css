@@ -1,0 +1,203 @@
+/* FlexGraph default styles. Override the custom properties to theme. */
+
+.fg-container {
+  --fg-bg: #ffffff;
+  --fg-grid: rgba(100, 116, 139, 0.12);
+  --fg-node-bg: #ffffff;
+  --fg-node-border: #cbd5e1;
+  --fg-node-text: #0f172a;
+  --fg-node-radius: 8px;
+  --fg-node-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --fg-accent: #2563eb;
+  --fg-edge-color: #64748b;
+  --fg-edge-width: 1.5px;
+  --fg-edge-active: #2563eb;
+  --fg-group-bg: rgba(148, 163, 184, 0.08);
+  --fg-group-border: rgba(100, 116, 139, 0.35);
+  --fg-group-text: #475569;
+  --fg-label-bg: #ffffff;
+  --fg-dim-opacity: 0.25;
+  --fg-font: 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fg-container:not(.fg-theme-light) {
+    --fg-bg: #0b1120;
+    --fg-grid: rgba(148, 163, 184, 0.08);
+    --fg-node-bg: #111827;
+    --fg-node-border: #334155;
+    --fg-node-text: #e2e8f0;
+    --fg-edge-color: #94a3b8;
+    --fg-edge-active: #60a5fa;
+    --fg-accent: #60a5fa;
+    --fg-group-bg: rgba(148, 163, 184, 0.06);
+    --fg-group-border: rgba(148, 163, 184, 0.3);
+    --fg-group-text: #94a3b8;
+    --fg-label-bg: #0b1120;
+  }
+}
+.fg-container.fg-theme-dark {
+  --fg-bg: #0b1120; --fg-node-bg: #111827; --fg-node-border: #334155; --fg-node-text: #e2e8f0;
+  --fg-edge-color: #94a3b8; --fg-edge-active: #60a5fa; --fg-accent: #60a5fa; --fg-label-bg: #0b1120;
+  --fg-group-text: #94a3b8; --fg-group-border: rgba(148, 163, 184, 0.3);
+}
+
+.fg-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-color: var(--fg-bg);
+  background-image: radial-gradient(var(--fg-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+  font: var(--fg-font);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  cursor: grab;
+}
+.fg-viewport.fg-panning { cursor: grabbing; }
+.fg-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+
+/* layers */
+.fg-groups, .fg-labels, .fg-nodes { position: absolute; left: 0; top: 0; }
+.fg-edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+
+/* nodes */
+.fg-node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: var(--fg-node-bg);
+  border: 1px solid var(--fg-node-border);
+  border-radius: var(--fg-node-radius);
+  box-shadow: var(--fg-node-shadow);
+  color: var(--fg-node-text);
+  cursor: pointer;
+  transition: opacity 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.fg-node__label { text-align: center; overflow: hidden; text-overflow: ellipsis; }
+.fg-node--measuring { width: max-content !important; height: auto !important; max-width: 320px; visibility: hidden; }
+.fg-node:hover { border-color: var(--fg-accent); }
+.fg-node.fg-selected { border-color: var(--fg-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fg-accent) 25%, transparent), var(--fg-node-shadow); }
+.fg-node--dragging { cursor: grabbing; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18); z-index: 2; }
+.fg-node--pinned::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-accent);
+  border: 2px solid var(--fg-node-bg);
+}
+
+/* ports */
+.fg-port {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--fg-node-bg);
+  border: 1.5px solid var(--fg-edge-color);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* groups */
+.fg-group {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  background: var(--fg-group-bg);
+  border: 1px dashed var(--fg-group-border);
+  border-radius: 12px;
+}
+.fg-group__label {
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-group-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* edges */
+.fg-edge__line {
+  fill: none;
+  stroke: var(--fg-edge-color);
+  stroke-width: var(--fg-edge-width);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: stroke 0.15s, opacity 0.15s;
+}
+.fg-edge__hit { fill: none; stroke: transparent; stroke-width: 12px; pointer-events: stroke; cursor: pointer; }
+.fg-edge:hover .fg-edge__line, .fg-edge.fg-selected .fg-edge__line { stroke: var(--fg-edge-active); stroke-width: 2.25px; }
+.fg-edge--dependency .fg-edge__line, .fg-edge--association .fg-edge__line { stroke-dasharray: 6 4; }
+
+/* markers: context-stroke makes them follow the edge colour (falls back to the edge colour variable) */
+.fg-marker-fill { fill: var(--fg-edge-color); fill: context-stroke; stroke: none; }
+.fg-marker-stroke { fill: none; stroke: var(--fg-edge-color); stroke: context-stroke; stroke-width: 1.5px; stroke-linecap: round; }
+.fg-marker-hollow { fill: var(--fg-bg); stroke: var(--fg-edge-color); stroke: context-stroke; stroke-width: 1.5px; }
+
+/* edge labels */
+.fg-edge-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--fg-label-bg);
+  color: var(--fg-group-text);
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* hover highlighting */
+.fg-hovering .fg-node:not(.fg-hl),
+.fg-hovering .fg-edge-label:not(.fg-hl) { opacity: var(--fg-dim-opacity); }
+.fg-hovering .fg-edge:not(.fg-hl) .fg-edge__line { opacity: var(--fg-dim-opacity); }
+.fg-hovering .fg-edge.fg-hl .fg-edge__line { stroke: var(--fg-edge-active); stroke-width: 2.25px; }
+.fg-dragging .fg-world { cursor: grabbing; }
+
+/* controls */
+.fg-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+}
+.fg-controls button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--fg-node-border);
+  border-radius: 8px;
+  background: var(--fg-node-bg);
+  color: var(--fg-node-text);
+  font: 600 16px/1 system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: var(--fg-node-shadow);
+}
+.fg-controls button:hover { border-color: var(--fg-accent); color: var(--fg-accent); }
+.fg-locked .fg-controls { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fg-node, .fg-edge__line { transition: none; }
+}

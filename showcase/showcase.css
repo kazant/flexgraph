@@ -1,0 +1,98 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff; --soft: #f8fafc; --border: #e2e8f0; --text: #0f172a; --muted: #64748b; --accent: #2563eb;
+  --ok: #16a34a; --run: #d97706; --wait: #94a3b8;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0b1120; --soft: #0f172a; --border: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --accent: #60a5fa; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+a { color: var(--accent); text-decoration: none; }
+
+.top { position: sticky; top: 0; z-index: 10; display: flex; gap: 18px; align-items: center; padding: 12px max(16px, calc(50% - 600px)); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); font-size: 14px; }
+.brand { display: flex; gap: 8px; align-items: center; font-weight: 700; color: var(--text); }
+.brand small { color: var(--muted); font-weight: 400; }
+.logo { width: 20px; height: 20px; border-radius: 5px; background: var(--accent); }
+.spacer { flex: 1; }
+
+.hero, #examples, footer { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.hero { padding-top: 56px; padding-bottom: 16px; }
+.hero h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -0.02em; }
+.lead { font-size: 18px; color: var(--muted); max-width: 720px; margin: 0 0 24px; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+.toc a { padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 14px; color: var(--text); background: var(--soft); }
+.toc a:hover { border-color: var(--accent); }
+.note { color: var(--muted); font-size: 13px; margin-top: 18px; }
+
+.ex { display: grid; grid-template-columns: 1fr; gap: 18px; padding: 40px 0; border-top: 1px solid var(--border); scroll-margin-top: 60px; }
+.ex__tag { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 600; }
+.ex h2 { margin: 6px 0 8px; font-size: 24px; letter-spacing: -0.01em; }
+.ex p { color: var(--muted); margin: 0 0 14px; max-width: 760px; }
+.ex__toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.ex__toolbar select, .ex__toolbar button { font: inherit; font-size: 13px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--soft); color: var(--text); cursor: pointer; }
+.ex__toolbar button:hover:not(:disabled) { border-color: var(--accent); }
+.ex__toolbar button:disabled { opacity: 0.45; cursor: default; }
+details summary { cursor: pointer; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+pre { margin: 0 0 12px; background: var(--soft); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font: 12px/1.55 ui-monospace, Menlo, Consolas, monospace; }
+.ex .ex__stats { font-size: 13px; }
+.ex__stats b { color: var(--text); }
+.ex__graph { position: relative; height: 520px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+#large .ex__graph { height: 640px; }
+
+@media (max-width: 860px) {
+
+  .ex__graph { height: 420px; }
+  #large .ex__graph { height: 480px; }
+}
+
+footer { padding: 48px 16px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); }
+
+/* ---- ERD tables ---- */
+.fg-node.erd { display: block; padding: 0; overflow: hidden; }
+.erd__head { height: 34px; line-height: 34px; padding: 0 10px; font-weight: 600; background: color-mix(in srgb, var(--fg-accent) 12%, var(--fg-node-bg)); border-bottom: 1px solid var(--fg-node-border); }
+.erd__row { height: 22px; line-height: 22px; padding: 0 10px; font: 12px ui-monospace, Menlo, monospace; display: flex; justify-content: space-between; }
+.erd__row span:last-child { color: var(--muted); }
+.fg-edge--has-many .fg-edge__line { stroke: #7c3aed; }
+.fg-edge--has-one .fg-edge__line { stroke: #0891b2; }
+
+/* ---- Org chart ---- */
+.person { display: flex; gap: 10px; align-items: center; width: 100%; padding: 0 10px; text-align: left; }
+.person b { display: block; font-size: 13px; }
+.person small { display: block; color: var(--muted); font-size: 12px; }
+.person__avatar { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 700; }
+.person__avatar--exec { background: #0f172a; }
+.person__avatar--eng { background: #2563eb; }
+.person__avatar--fin { background: #059669; }
+.person__avatar--prod { background: #db2777; }
+
+/* ---- Pipeline ---- */
+.stage { display: flex; gap: 8px; align-items: center; width: 100%; padding: 0 12px; }
+.stage i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.stage--ok i { background: var(--ok); }
+.stage--running i { background: var(--run); animation: pulse 1.2s ease-in-out infinite; }
+.stage--waiting i { background: transparent; border: 2px solid var(--wait); }
+.stage--waiting span { color: var(--muted); }
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+/* ---- State machine ---- */
+.fg-node.state { border-radius: 999px; }
+.fg-node.state--start { border: 2px solid var(--fg-accent); }
+.fg-node.state--end { background: color-mix(in srgb, var(--fg-node-text) 8%, var(--fg-node-bg)); }
+
+/* ---- UML ---- */
+.fg-node.uml { display: block; padding: 0; overflow: hidden; border-radius: 4px; }
+.uml__head { padding: 6px 10px; text-align: center; font-weight: 700; border-bottom: 1px solid var(--fg-node-border); background: color-mix(in srgb, var(--fg-accent) 10%, var(--fg-node-bg)); }
+.uml__head small { display: block; font-weight: 400; font-style: italic; color: var(--muted); font-size: 11px; line-height: 1.2; }
+.uml__sec { padding: 4px 10px; min-height: 26px; font: 11.5px/18px ui-monospace, Menlo, monospace; border-bottom: 1px solid var(--fg-node-border); }
+.uml__sec:last-child { border-bottom: 0; }
+.fg-edge--realizes .fg-edge__line { stroke-dasharray: 5 4; }
+.fg-edge--dependency .fg-edge__line { stroke-dasharray: 3 3; }
+
+/* ---- Brand theme ---- */
+.brand-theme.fg-container, .brand-theme .fg-container, .fg-container.brand-theme {
+  --fg-bg: #fff7ed; --fg-grid: rgba(234, 88, 12, 0.12); --fg-node-bg: #ffffff; --fg-node-border: #fdba74; --fg-node-text: #431407;
+  --fg-accent: #ea580c; --fg-edge-color: #c2410c; --fg-edge-active: #ea580c; --fg-label-bg: #fff7ed;
+  --fg-group-bg: rgba(251, 146, 60, 0.08); --fg-group-border: rgba(234, 88, 12, 0.35); --fg-group-text: #9a3412;
+}

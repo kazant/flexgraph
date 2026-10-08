@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlexGraph Demo</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../css/graph.css">
+  <style>
+    :root { color-scheme: light dark; --bar: #f8fafc; --bar-border: #e2e8f0; --text: #0f172a; --muted: #64748b; }
+    @media (prefers-color-scheme: dark) { :root { --bar: #0f172a; --bar-border: #1e293b; --text: #e2e8f0; --muted: #94a3b8; } }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bar); }
+    body { display: grid; grid-template-rows: auto 1fr auto; }
+    header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--bar-border); }
+    header h1 { font-size: 15px; margin: 0 8px 0 0; }
+    label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+    select, button, input { font: inherit; }
+    select, button { padding: 4px 10px; border: 1px solid var(--bar-border); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; }
+    button:hover { border-color: #2563eb; }
+    #graph { position: relative; min-height: 300px; }
+    footer { display: flex; flex-wrap: wrap; gap: 16px; padding: 6px 14px; border-top: 1px solid var(--bar-border); color: var(--muted); font-size: 12px; }
+    footer b { color: var(--text); font-weight: 600; }
+    dialog { border: 1px solid var(--bar-border); border-radius: 10px; background: var(--bar); color: var(--text); width: min(640px, 92vw); }
+    dialog textarea { width: 100%; height: 300px; font: 12px ui-monospace, monospace; }
+    /* ERD table nodes */
+    .fg-node.erd { display: block; padding: 0; overflow: hidden; }
+    .erd__head { height: 34px; line-height: 34px; padding: 0 10px; font-weight: 600; background: color-mix(in srgb, var(--fg-accent) 12%, var(--fg-node-bg)); border-bottom: 1px solid var(--fg-node-border); }
+    .erd__row { height: 22px; line-height: 22px; padding: 0 10px; font: 12px ui-monospace, Menlo, monospace; display: flex; justify-content: space-between; }
+    .erd__row span:last-child { color: var(--muted); }
+    .fg-edge--has-many .fg-edge__line { stroke: #7c3aed; }
+    .fg-edge--has-one .fg-edge__line { stroke: #0891b2; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FlexGraph</h1>
+    <label>Sample <select id="sample"></select></label>
+    <label>Direction <select id="direction"><option>TB</option><option>LR</option><option>BT</option><option>RL</option></select></label>
+    <label>Edges <select id="routing"><option>orthogonal</option><option>straight</option><option>curved</option></select></label>
+    <label><input type="checkbox" id="hops" checked> Line hops</label>
+    <label><input type="checkbox" id="animate" checked> Animate</label>
+    <button id="relayout" title="Full automatic layout (respects pinned nodes)">Relayout</button>
+    <button id="add" title="Incremental update: add a node without moving the others">Add node</button>
+    <button id="unpin">Unpin all</button>
+    <button id="state">Save / load</button>
+    <button id="theme">Theme</button>
+  </header>
+  <main id="graph"></main>
+  <footer>
+    <span>Nodes <b id="s-nodes">0</b></span>
+    <span>Edges <b id="s-edges">0</b></span>
+    <span>Crossings <b id="s-cross">0</b></span>
+    <span>Edges over nodes <b id="s-over">0</b></span>
+    <span>Layout + routing <b id="s-time">0</b> ms</span>
+    <span>License <b id="s-lic">…</b></span>
+    <span id="s-msg">Drag nodes to pin them · scroll to zoom · drag background to pan · hover to highlight</span>
+  </footer>
+  <dialog id="dlg">
+    <p>State (positions + pins). Edit and press Load, or copy to save.</p>
+    <textarea id="dlg-text"></textarea>
+    <p><button id="dlg-load">Load</button> <button id="dlg-close">Close</button></p>
+  </dialog>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlexGraph — Docs & Pricing</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../css/graph.css">
+  <style>
+    :root { --bg: #ffffff; --soft: #f8fafc; --border: #e2e8f0; --text: #0f172a; --muted: #64748b; --accent: #2563eb; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0b1120; --soft: #0f172a; --border: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --accent: #60a5fa; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    header, section, footer { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+    header { padding-top: 48px; }
+    nav { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; max-width: 960px; margin: 0 auto; font-size: 14px; }
+    nav a, a { color: var(--accent); text-decoration: none; }
+    h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; margin: 0 0 12px; }
+    h2 { margin-top: 56px; font-size: 26px; } h3 { margin-top: 28px; font-size: 18px; }
+    .lead { font-size: 19px; color: var(--muted); max-width: 680px; }
+    pre { background: var(--soft); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 13px/1.55 ui-monospace, Menlo, Consolas, monospace; }
+    code { font: 0.9em ui-monospace, Menlo, Consolas, monospace; }
+    #live { position: relative; height: 420px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .card { border: 1px solid var(--border); border-radius: 12px; padding: 20px; background: var(--soft); }
+    .price { font-size: 36px; font-weight: 700; } .price small { font-size: 15px; color: var(--muted); font-weight: 400; }
+    .card ul { padding-left: 18px; margin: 12px 0 0; } .featured { border-color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; } th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 600; }
+    footer { padding: 48px 16px; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><a href="#pricing">Pricing</a><a href="#csp">CSP</a><a href="#offline">Offline</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
+<header>
+  <h1>Relationship graphs with clean, logical lines.</h1>
+  <p class="lead">A Dagre replacement in plain HTML, CSS &amp; JavaScript: fewer crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
+  <div id="live"></div>
+  <p><a class="btn" href="#pricing">$50 / month per project</a> &nbsp; <a href="../demo/">Open the full demo →</a></p>
+</header>
+
+<section id="start">
+  <h2>Getting started</h2>
+  <p>1. Subscribe, then get your npm token in the <a href="https://portal.flexgraph.example/portal/">customer portal</a> and add an <code>.npmrc</code> to your project:</p>
+  <pre>@flexgraph-labs:registry=https://npm.flexgraph.example/
+//npm.flexgraph.example/:_authToken=${FLEXGRAPH_NPM_TOKEN}</pre>
+  <p>2. Install and render:</p>
+  <pre>npm install @flexgraph-labs/flexgraph</pre>
+  <pre>import { createGraph, setLicenseKey } from "@flexgraph-labs/flexgraph";
+import "@flexgraph-labs/flexgraph/style.css";
+
+setLicenseKey("FG-PRJ-XXXX-XXXX-XXXX-XXXX");
+const view = createGraph(document.getElementById("graph"), data, { direction: "LR" });</pre>
+  <p>3. Register your production domain (and up to 3 staging domains) for the project in the portal. On <code>localhost</code> everything works without a key.</p>
+  <p>Want to try first? <code>npm install @flexgraph-labs/flexgraph-trial</code> — full features on localhost with a watermark.</p>
+</section>
+
+<section id="api">
+  <h2>API</h2>
+  <h3>Data</h3>
+  <pre>{
+  nodes:  [{ id, label, width?, height?, group?, ports?: [{ id, side: "top|right|bottom|left", offset? }],
+             constraints?: { pinned, x, y, rank } }],
+  edges:  [{ id, source, target, sourcePort?, targetPort?, type?, label?, markerStart?, markerEnd? }],
+  groups: [{ id, label }],
+  constraints: [{ type: "leftOf", a, b }, { type: "sameRank", nodes: [...] }]
+}</pre>
+  <h3>Options</h3>
+  <table>
+    <tr><th>Option</th><th>Default</th><th></th></tr>
+    <tr><td><code>direction</code></td><td><code>"TB"</code></td><td><code>TB</code>, <code>LR</code>, <code>BT</code>, <code>RL</code></td></tr>
+    <tr><td><code>edgeRouting</code></td><td><code>"orthogonal"</code></td><td><code>orthogonal</code>, <code>straight</code>, <code>curved</code></td></tr>
+    <tr><td><code>nodeSpacing</code> / <code>rankSpacing</code> / <code>edgeSpacing</code></td><td>40 / 80 / 10</td><td>px</td></tr>
+    <tr><td><code>cornerRadius</code>, <code>lineHops</code></td><td>6, true</td><td>Rounded bends; arcs where lines must cross</td></tr>
+    <tr><td><code>animate</code>, <code>pinOnDrag</code></td><td>true, true</td><td></td></tr>
+    <tr><td><code>renderNode(node, el)</code></td><td></td><td>Custom node content (HTML string or element)</td></tr>
+    <tr><td><code>onNodeClick</code>, <code>onEdgeClick</code></td><td></td><td>Click callbacks</td></tr>
+    <tr><td><code>worker</code></td><td></td><td>URL of <code>flexgraph.worker.js</code> to lay out large graphs off the main thread</td></tr>
+  </table>
+  <h3>Methods</h3>
+  <pre>view.relayout()            // full layout, respects pinned nodes
+view.updateGraph(data)     // incremental: existing nodes stay where they are
+view.exportState()         // { nodes: { id: { x, y, pinned } }, transform }
+view.importState(state)
+view.pin(id) / view.unpin(id) / view.fit() / view.zoomBy(1.2) / view.select(id)
+view.on("nodeclick", ({ node }) => …)</pre>
+</section>
+
+<section id="pricing">
+  <h2>Pricing</h2>
+  <div class="grid">
+    <div class="card featured"><div>Project license</div><div class="price">$50 <small>/ month per project</small></div>
+      <ul><li>1 production domain (+ subdomains optional)</li><li>3 staging / test / preview domains</li><li>localhost always free</li><li>All features and updates</li></ul></div>
+    <div class="card"><div>Annual</div><div class="price">$500 <small>/ year per project</small></div><ul><li>Two months free</li><li>Same terms as monthly</li></ul></div>
+    <div class="card"><div>Offline add-on</div><div class="price">$75 <small>/ month per project</small></div><ul><li>For intranets without internet access</li><li>Domain-bound key, renewed monthly</li></ul></div>
+  </div>
+  <h3>What happens if a payment fails?</h3>
+  <p>Your graphs keep working for 14 days and we email you on day 1, 7 and 13. After that, graphs on your site show a <b>“License inactive”</b> overlay to your users until the payment goes through. A canceled subscription keeps working until the end of the paid period.</p>
+  <p class="muted">Open-source and non-commercial projects: ask us about a free license.</p>
+</section>
+
+<section id="csp">
+  <h2>Content Security Policy</h2>
+  <p>The library validates its license against <code>https://license.flexgraph.example</code>. If your site uses a CSP, allow it in <code>connect-src</code>:</p>
+  <pre>Content-Security-Policy: connect-src 'self' https://license.flexgraph.example</pre>
+  <p>Validation happens about once a week per browser (the signed token is cached). If the license server is unreachable, the graph keeps working.</p>
+</section>
+
+<section id="offline">
+  <h2>Offline / intranet projects</h2>
+  <p>With the offline add-on, the portal issues a signed key bound to your domain (<code>FG-OFF-…</code>). It needs no network access and is valid for the paid period + 14 days. A new key is emailed every month — update it in your project:</p>
+  <pre>setLicenseKey(process.env.FLEXGRAPH_OFFLINE_KEY);</pre>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <h3>What counts as a project?</h3><p>One application: one production domain plus up to three non-production domains. Three applications need three licenses.</p>
+  <h3>What data does the license check send?</h3><p>The license key, the hostname and the library version. Nothing about your users. See the <a href="PRIVACY.md">privacy policy</a>.</p>
+  <h3>Can I use it with React / Vue / Svelte?</h3><p>Yes — create the graph in a mount effect and call <code>view.destroy()</code> on unmount.</p>
+</section>
+
+<footer>© FlexGraph Labs AS · <a href="../LICENSE.md">License (EULA)</a> · <a href="TERMS.md">Terms</a> · <a href="PRIVACY.md">Privacy</a></footer>
+
+<script type="module">
+  import { createGraph } from '../src/index.js';
+  import { grouped } from '../demo/samples.js';
+  createGraph(document.getElementById('live'), grouped(), { controls: true });
+</script>
+</body>
+</html>

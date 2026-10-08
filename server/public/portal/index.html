@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlexGraph Customer Portal</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #fff; --border: #e2e8f0; --text: #0f172a; --muted: #64748b; --accent: #2563eb; --ok: #16a34a; --warn: #d97706; --bad: #dc2626; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0b1120; --card: #111827; --border: #1f2937; --text: #e2e8f0; --muted: #94a3b8; --accent: #60a5fa; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+    h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 16px 0; }
+    input, select, button { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); }
+    button { cursor: pointer; } button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    code { font: 13px ui-monospace, Menlo, monospace; background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .active { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+    .past_due { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+    .canceled { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+    table { width: 100%; border-collapse: collapse; } td, th { text-align: left; padding: 6px 4px; border-top: 1px solid var(--border); font-size: 13px; }
+    .err { color: var(--bad); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>FlexGraph customer portal</h1>
+  <p class="muted">Manage project licenses, domains and your private npm registry token.</p>
+  <div id="app"></div>
+</main>
+<script>
+(() => {
+  const API = '';
+  const app = document.getElementById('app');
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (ms) => (ms ? new Date(ms).toISOString().slice(0, 10) : '—');
+  const hash = new URLSearchParams(location.hash.slice(1));
+  if (hash.get('session')) { try { sessionStorage.setItem('fg-session', hash.get('session')); } catch {} history.replaceState(null, '', location.pathname); }
+  let session = null;
+  try { session = sessionStorage.getItem('fg-session'); } catch {}
+
+  async function api(path, opts = {}) {
+    const res = await fetch(API + path, { ...opts, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + session, ...(opts.headers || {}) } });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 401) { try { sessionStorage.removeItem('fg-session'); } catch {} session = null; render(); throw new Error('Signed out'); }
+    if (!res.ok) throw new Error(body.message || 'Request failed');
+    return body;
+  }
+
+  function login() {
+    app.innerHTML = `<div class="card"><h2>Sign in</h2><p class="muted">We email you a sign-in link.</p>
+      <form id="f" class="row"><input type="email" id="email" required placeholder="you@company.com" style="min-width:260px"><button class="primary">Send link</button></form><p id="msg" class="muted"></p></div>`;
+    document.getElementById('f').onsubmit = async (e) => {
+      e.preventDefault();
+      await fetch(API + '/v1/portal/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value }) });
+      document.getElementById('msg').textContent = 'If that address has a subscription, a sign-in link is on its way.';
+    };
+  }
+
+  async function render() {
+    if (!session) return login();
+    let me;
+    try { me = await api('/v1/portal/me'); } catch (e) { if (session) app.innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+    const sub = me.subscriptions[0];
+    app.innerHTML = `
+      <div class="card"><h2>Subscription</h2>
+        ${sub ? `<p><span class="pill ${esc(sub.status === 'canceling' ? 'past_due' : sub.status)}">${esc(sub.status)}</span>
+          ${sub.quantity} project license(s) · ${esc(sub.plan)} ($${sub.plan === 'annual' ? me.pricing.annual + '/year' : me.pricing.monthly + '/month'} per project)${sub.offlineAddon ? ' · offline add-on' : ''} · renews ${fmt(sub.currentPeriodEnd)}</p>
+          <div class="row">${sub.billingPortalUrl ? `<a href="${esc(sub.billingPortalUrl)}" target="_blank" rel="noopener"><button>Invoices, payment method, add/remove licenses, cancel</button></a>` : ''}</div>`
+        : `<p>No subscription yet.</p>${me.checkoutUrl ? `<a href="${esc(me.checkoutUrl)}"><button class="primary">Buy a project license — $${me.pricing.monthly}/month</button></a>` : ''}`}
+      </div>
+      <div class="card"><h2>npm registry token</h2>
+        <p class="muted">Add to <code>.npmrc</code>: <code>@flexgraph-labs:registry=https://npm.flexgraph.example/</code> and <code>//npm.flexgraph.example/:_authToken=\${FLEXGRAPH_NPM_TOKEN}</code></p>
+        <div class="row"><button id="tok">Generate new token</button><span id="tokout" class="muted">The token is shown once. A new token revokes the previous one.</span></div>
+      </div>
+      ${me.projects.map((p) => project(p, sub)).join('')}`;
+    document.getElementById('tok').onclick = async () => {
+      try { const r = await api('/v1/portal/registry-token', { method: 'POST' }); document.getElementById('tokout').innerHTML = `<code>${esc(r.token)}</code>`; }
+      catch (e) { document.getElementById('tokout').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    };
+    for (const p of me.projects) wire(p);
+  }
+
+  function project(p, sub) {
+    return `<div class="card" id="p-${esc(p.id)}">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(p.name)}</h2><span class="pill ${esc(p.status)}">${esc(p.status)}</span></div>
+      <p>License key: <code>${esc(p.licenseKey)}</code> <button data-copy="${esc(p.licenseKey)}">Copy</button></p>
+      <p class="muted">Paid until ${fmt(p.paidUntil)}${p.status === 'past_due' ? ` · <b>locks on ${fmt(p.graceUntil)}</b>` : ''}</p>
+      <table><thead><tr><th>Domain</th><th>Type</th><th></th></tr></thead><tbody>
+        ${p.domains.map((d) => `<tr><td>${esc(d.hostname)}${d.type === 'production' && p.wildcard ? ' (+ subdomains)' : ''}</td><td>${esc(d.type)}</td><td><button data-del="${esc(d.hostname)}">Remove</button>
+          ${sub?.offlineAddon ? `<button data-off="${esc(d.hostname)}">Offline key</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No domains yet. localhost always works without registration.</td></tr>'}
+      </tbody></table>
+      <form class="row add" style="margin-top:8px"><input name="hostname" placeholder="app.example.com" required><select name="type"><option value="production">production</option><option value="staging">staging / test</option></select><button class="primary">Add domain</button>
+        <label class="muted"><input type="checkbox" class="wild" ${p.wildcard ? 'checked' : ''}> include subdomains of the production domain</label></form>
+      <p class="msg muted">1 production domain + up to 3 non-production domains. Changes are limited to 3 per 30 days.</p>
+      <details><summary>Validation activity (30 days)</summary><div class="usage muted">Loading…</div></details>
+    </div>`;
+  }
+
+  function wire(p) {
+    const root = document.getElementById('p-' + p.id);
+    const msg = root.querySelector('.msg');
+    root.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = () => navigator.clipboard.writeText(b.dataset.copy)));
+    root.querySelector('.add').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      try { await api(`/v1/portal/projects/${p.id}/domains`, { method: 'POST', body: JSON.stringify({ hostname: f.get('hostname'), type: f.get('type') }) }); render(); }
+      catch (err) { msg.innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+    };
+    root.querySelector('.wild').onchange = (e) => api(`/v1/portal/projects/${p.id}`, { method: 'PATCH', body: JSON.stringify({ wildcard: e.target.checked }) }).then(render);
+    root.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
+      if (!confirm(`Remove ${b.dataset.del}? The graph will lock on that domain.`)) return;
+      await api(`/v1/portal/projects/${p.id}/domains/${encodeURIComponent(b.dataset.del)}`, { method: 'DELETE' }); render();
+    }));
+    root.querySelectorAll('[data-off]').forEach((b) => (b.onclick = async () => {
+      try { const r = await api(`/v1/portal/projects/${p.id}/offline-key?domain=${encodeURIComponent(b.dataset.off)}`); msg.innerHTML = `Offline key (valid until ${fmt(r.expires)}):<br><code>${esc(r.key)}</code>`; }
+      catch (err) { msg.innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+    }));
+    root.querySelector('details').ontoggle = async (e) => {
+      if (!e.target.open) return;
+      const u = await api(`/v1/portal/projects/${p.id}/usage`);
+      root.querySelector('.usage').innerHTML = u.domains.length ? `<table><tr><th>Domain</th><th>Registered</th><th>Requests</th><th>Last seen</th><th>Versions</th></tr>${u.domains.map((d) => `<tr><td>${esc(d.hostname)}</td><td>${d.registered ? 'yes' : '<b class="err">no</b>'}</td><td>${d.requests}</td><td>${esc(d.last_seen)}</td><td>${esc(d.versions)}</td></tr>`).join('')}</table>` : 'No validations yet.';
+    };
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
