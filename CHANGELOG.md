@@ -5,6 +5,8 @@ All notable changes to this project are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- Clicking a node or edge keeps its highlight (the hover chain) until the selection is cleared by clicking the
+  background, pressing Esc or selecting something else. Turn off with `highlightSelection: false`.
 - Node clicks now include the neighbouring nodes: `onNodeClick(node, event, { previous, next })` and
   `nodeclick` events get `previous` / `next`. New `view.getConnections(id, { chain })` returns them on demand
   (direct neighbours, or the whole upstream/downstream chain).
@@ -15,6 +17,8 @@ All notable changes to this project are documented here. This project follows [S
   routed fresh.
 
 ### Fixed
+- Highlighted and selected edges no longer lose their highlight when edges are redrawn (end of an animated
+  relayout, dragging).
 - The `worker` option no longer fails when given a `URL` object (it was sent through `postMessage`).
 
 ## [1.0.0] — 2026-10-08

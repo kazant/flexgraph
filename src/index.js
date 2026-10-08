@@ -142,6 +142,7 @@ export class GraphView {
       const map = this.selected.kind === 'edge' ? this.renderer.edgeEls : this.renderer.nodeEls;
       map.get(this.selected.id)?.classList.add('fg-selected');
     }
+    this._applyHighlight();
     this._emit('select', this.selected);
   }
   getSelection() { return this.selected; }
@@ -319,6 +320,9 @@ export class GraphView {
     this._groups = computeGroupBoxes(this.model, { nodes: this.positions });
     r.renderGroups(this.model, this._groups);
     r.renderEdges(this.model, this.routing, interp);
+    // renderEdges resets edge classes: restore selection and highlight
+    if (this.selected?.kind === 'edge') r.edgeEls.get(this.selected.id)?.classList.add('fg-selected');
+    if (this._hl.length) for (const e of this._hl) e.classList.add('fg-hl');
   }
 
   _present(from, animate) {
@@ -411,16 +415,24 @@ export class GraphView {
   }
 
   _hover(tgt) {
+    this._hovered = tgt || null;
+    this._applyHighlight();
+    this._emit('hover', tgt ? { kind: tgt.kind, id: tgt.id } : null);
+  }
+
+  // Highlight the hovered item, or else the selected one (so a clicked node keeps its chain lit).
+  _applyHighlight() {
     for (const e of this._hl) e.classList.remove('fg-hl');
     this._hl = [];
     const r = this.renderer;
+    let tgt = this._hovered || (this.options.highlightSelection ? this.selected : null);
+    if (tgt && !(tgt.kind === 'edge' ? this.model?.edgeById : this.model?.nodeById)?.has(tgt.id)) tgt = null;
     r.world.classList.toggle('fg-hovering', !!tgt);
     if (!tgt) return;
     const mark = (e) => { if (e) { e.classList.add('fg-hl'); this._hl.push(e); } };
     const hl = highlightSet(this.model.edges, tgt, this.options.hoverHighlight);
     for (const id of hl.nodes) mark(r.nodeEls.get(id));
     for (const id of hl.edges) { mark(r.edgeEls.get(id)); mark(r.labelEls.get(id)); }
-    this._emit('hover', tgt ? { kind: tgt.kind, id: tgt.id } : null);
   }
 
   _applyLicense(state) {

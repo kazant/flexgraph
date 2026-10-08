@@ -8,7 +8,7 @@ A flexible relationship graph for the browser — a replacement for Dagre with f
 - **Track assignment** – parallel segments are spread onto separate tracks, ordered so they don't cross.
 - **Line hops**, rounded corners, arrowheads and ERD markers (crow's foot etc.), edge labels.
 - **Groups** (compound layout – boxes never overlap), **constraints** (pinned, fixed rank, same rank, left-of).
-- **Interaction** – drag (re-routes only affected edges), pin, zoom/pan/pinch, fit, hover highlighting (whole upstream/downstream chain, or direct neighbors with `hoverHighlight: "neighbors"`), selection, save/load state, animated transitions, incremental updates.
+- **Interaction** – drag (re-routes only affected edges), pin, zoom/pan/pinch, fit, hover highlighting (whole upstream/downstream chain, or direct neighbors with `hoverHighlight: "neighbors"`; a clicked node stays highlighted), selection, save/load state, animated transitions, incremental updates.
 - Layout engine is DOM-free (Node, SSR, Web Worker).
 
 See [PLAN.md](PLAN.md) for the full design.

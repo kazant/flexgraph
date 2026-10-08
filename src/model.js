@@ -34,6 +34,7 @@ export const DEFAULT_OPTIONS = Object.freeze({
   controls: true,
   showPorts: true,
   hoverHighlight: 'chain', // 'chain' (whole upstream + downstream path) or 'neighbors'
+  highlightSelection: true, // keep the highlight on the selected (clicked) node or edge
   edgeTypes: {
     default: { markerEnd: 'arrow' },
     'has-many': { markerStart: 'one', markerEnd: 'many' },
