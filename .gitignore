@@ -8,3 +8,6 @@ server/.wrangler/
 .DS_Store
 site/
 .vercel/
+
+.vercel
+.env*
