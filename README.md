@@ -47,8 +47,8 @@ const view = createGraph(document.getElementById("graph"), {
 
 view.relayout();               // full auto layout (respects pins)
 view.updateGraph(newData);     // incremental: existing nodes stay put
-view.exportState();            // positions + pins as JSON
-view.importState(saved);
+view.exportState();            // positions, pins, zoom and the exact edge lines as JSON
+view.importState(saved);       // recreates the saved picture, lines included
 ```
 
 The container needs a size (e.g. `height: 600px`). Nodes without `width`/`height` are measured from the DOM. Use `renderNode(node, el)` for custom node content (return an HTML string or element).

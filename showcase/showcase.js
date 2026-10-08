@@ -74,15 +74,35 @@ function mount(ex, article) {
   $('[data-act=fit]', article).onclick = () => view.fit();
 
   if (ex.interactive) {
-    let current = data, n = 0, saved = null;
+    // Saved in this browser (localStorage), so the layout survives a page reload.
+    const KEY = 'flexgraph-showcase-live';
+    const read = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } };
+    const write = (v) => { try { v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); return true; } catch { return false; } };
+    let current = data, n = 0;
     const loadBtn = $('[data-act=load]', article);
+    const restore = async (saved) => {
+      current = saved.data;
+      n = current.nodes.filter((x) => x.id.startsWith('step')).length;
+      dir.value = saved.options.direction; routing.value = saved.options.edgeRouting;
+      await view.setOptions(saved.options, { relayout: false });
+      await view.updateGraph(current);
+      await view.importState(saved.state);
+      stats();
+      statsEl.textContent = 'Restored your saved layout: positions, pins and the exact lines.';
+    };
     $('[data-act=add]', article).onclick = () => {
       const id = 'step' + ++n;
       const from = current.nodes[Math.floor(Math.random() * current.nodes.length)].id;
-      current = { ...current, nodes: [...current.nodes, { id, label: 'Step ' + n, width: 120, height: 42 }], edges: [...current.edges, { source: from, target: id }] };
+      current = { ...current, nodes: [...current.nodes, { id, label: 'Step ' + n, width: 120, height: 42 }], edges: [...current.edges, { id: 'e-' + id, source: from, target: id }] };
       timed(view.updateGraph(current, { mode: 'stable' }));
     };
-    $('[data-act=save]', article).onclick = () => { saved = { data: current, state: view.exportState() }; loadBtn.disabled = false; statsEl.textContent = 'Saved positions of ' + Object.keys(saved.state.nodes).length + ' nodes.'; };
-    loadBtn.onclick = () => { if (!saved) return; current = saved.data; view.updateGraph(current).then(() => view.importState(saved.state)).then(() => stats()); };
+    $('[data-act=save]', article).onclick = () => {
+      const ok = write({ data: current, options: { direction: dir.value, edgeRouting: routing.value }, state: view.exportState() });
+      loadBtn.disabled = !ok;
+      statsEl.textContent = ok ? 'Saved. Move things around or reload the page, then press Load.' : 'Could not save (browser storage is blocked).';
+    };
+    loadBtn.onclick = () => { const s = read(); if (s) restore(s); };
+    const saved = read();
+    if (saved) { loadBtn.disabled = false; view.ready.then(() => restore(saved)); }
   }
 }

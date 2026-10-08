@@ -365,3 +365,47 @@ class Heap {
     return topV;
   }
 }
+
+/**
+ * Put saved edge routes (from exportState) back into a routing result, so a restored
+ * view shows exactly the lines the user saw. A saved route is only used if it still
+ * starts and ends on the border of its nodes (sizes unchanged); otherwise the fresh route stays.
+ * @returns {number} how many saved routes were applied
+ */
+export function applySavedRoutes(model, routing, rects, saved) {
+  if (!saved) return 0;
+  const o = model.options;
+
+  const onBorder = (r, p) => p.x >= r.x - 1 && p.x <= r.x + r.width + 1 && p.y >= r.y - 1 && p.y <= r.y + r.height + 1 &&
+    Math.min(Math.abs(p.x - r.x), Math.abs(p.x - r.x - r.width), Math.abs(p.y - r.y), Math.abs(p.y - r.y - r.height)) <= 1;
+  const sideOf = (r, p) => {
+    const d = { left: Math.abs(p.x - r.x), right: Math.abs(p.x - r.x - r.width), top: Math.abs(p.y - r.y), bottom: Math.abs(p.y - r.y - r.height) };
+    return Object.keys(d).reduce((a, b) => (d[b] < d[a] ? b : a));
+  };
+  let applied = 0;
+  for (const e of model.edges) {
+    const pts = saved[e.id], path = routing.paths.get(e.id);
+    const a = rects.get(e.source), b = rects.get(e.target);
+    if (!Array.isArray(pts) || pts.length < 2 || !path || !a || !b) continue;
+    const points = pts.map((p) => ({ x: +p[0], y: +p[1] }));
+    if (points.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))) continue;
+    if (!onBorder(a, points[0]) || !onBorder(b, points[points.length - 1])) continue;
+    let ok = true;
+    for (let i = 0; ok && i < points.length - 1; i++) {
+      const p = points[i], q = points[i + 1];
+      if (routing.mode === 'orthogonal' && Math.abs(p.x - q.x) > 0.5 && Math.abs(p.y - q.y) > 0.5) ok = false;
+    }
+    if (!ok) continue;
+    path.points = points;
+    path.sourceSide = sideOf(a, points[0]);
+    path.targetSide = sideOf(b, points[points.length - 1]);
+    if (routing.raw) routing.raw.set(e.id, points.map((p) => ({ ...p })));
+    applied++;
+  }
+  if (applied) {
+    const order = model.edges.map((e) => e.id).filter((id) => routing.paths.has(id));
+    const hops = o.lineHops && routing.mode === 'orthogonal' ? computeHops(routing.paths, order, o.hopRadius) : new Map();
+    for (const [id, p] of routing.paths) p.hops = hops.get(id) || [];
+  }
+  return applied;
+}

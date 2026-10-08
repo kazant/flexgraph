@@ -118,7 +118,11 @@ export interface GraphOptions {
 export interface ViewState {
   version: 1;
   direction: Direction;
+  /** Routing mode the edges were saved with; saved edges are only reused in the same mode. */
+  edgeRouting?: EdgeRouting;
   nodes: Record<string, { x: number; y: number; pinned: boolean }>;
+  /** Exact edge lines as [x, y] points. Reused on import while the nodes still match, so lines come back as the user left them. */
+  edges?: Record<string, [number, number][]>;
   transform: { x: number; y: number; k: number };
 }
 

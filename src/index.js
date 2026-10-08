@@ -2,7 +2,7 @@
 
 import { normalizeGraph, resolveOptions, DEFAULT_OPTIONS, GraphValidationError } from './model.js';
 import { computeLayout, computeGroupBoxes, boundsOf, resolveOverlaps } from './layout/index.js';
-import { routeEdges } from './routing/router.js';
+import { routeEdges, applySavedRoutes } from './routing/router.js';
 import { Renderer, interpolatePaths, edgePath } from './render.js';
 import { attachInteraction } from './interaction.js';
 import { setLicenseKey, getLicenseState, onLicenseChange, ensureLicense } from './license/verify.js';
@@ -97,7 +97,9 @@ export class GraphView {
   exportState() {
     const nodes = {};
     for (const [id, r] of this.positions) nodes[id] = { x: round(r.x), y: round(r.y), pinned: !!(this.pins.get(id)) };
-    return { version: 1, direction: this.options.direction, nodes, transform: { ...this.renderer.transform } };
+    const edges = {};
+    if (this.routing) for (const [id, p] of this.routing.paths) edges[id] = p.points.map((q) => [round2(q.x), round2(q.y)]);
+    return { version: 1, direction: this.options.direction, edgeRouting: this.routing?.mode, nodes, edges, transform: { ...this.renderer.transform } };
   }
 
   /** Restore positions / pins saved with exportState(). */
@@ -113,6 +115,8 @@ export class GraphView {
     this.model = this._prepareModel();
     for (const e of this.layoutEdges.values()) e.waypoints = [];
     this.routing = routeEdges(this.model, { nodes: this.positions, edges: this.layoutEdges });
+    // reuse the exact saved lines (falls back to the fresh route if a saved one no longer fits)
+    if (state.edges && (!state.edgeRouting || state.edgeRouting === this.routing.mode)) applySavedRoutes(this.model, this.routing, this.positions, state.edges);
     this._present(from, animate);
     if (transform && state.transform) this.setTransform(state.transform);
     return Promise.resolve(this);
@@ -416,4 +420,5 @@ export class GraphView {
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const round = (v) => Math.round(v * 10) / 10;
+const round2 = (v) => Math.round(v * 100) / 100;
 function centerOf(el) { const b = el.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }

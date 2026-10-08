@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `hoverHighlight` option: `"chain"` (default) highlights the whole upstream and downstream chain of the
+  hovered node or edge; `"neighbors"` keeps the previous direct-connections behaviour.
+- `exportState()` now also saves the exact edge lines (`edges`) and the routing mode; `importState()`
+  reuses them, so a restored view looks exactly as the user left it. Lines on nodes whose size changed are
+  routed fresh.
+
+### Fixed
+- The `worker` option no longer fails when given a `URL` object (it was sent through `postMessage`).
+
 ## [1.0.0] — 2026-10-08
 
 ### Added

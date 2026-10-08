@@ -236,7 +236,7 @@ createGraph(el, data);`
     id: 'live',
     title: 'Live editing',
     tag: 'Incremental updates · save / load',
-    text: 'Add nodes without moving the ones already placed, drag to pin, then save the positions and load them again later.',
+    text: 'Drag nodes until the lines run the way you want, then press Save. Reload the page: the layout comes back exactly, including every line. Add nodes without moving the ones already placed.',
     interactive: true,
     make: () => ({
       data: {
@@ -251,9 +251,14 @@ createGraph(el, data);`
     code: `// keeps existing nodes in place, only lays out new ones
 view.updateGraph({ nodes: [...nodes, newNode], edges: [...edges, newEdge] }, { mode: "stable" });
 
-const saved = view.exportState();   // positions + pins as JSON
-await view.importState(saved);      // restore later
-view.relayout();                    // full auto layout, respects pins`
+// save: positions, pins, zoom and the exact edge lines, as plain JSON
+localStorage.setItem("my-layout", JSON.stringify(view.exportState()));
+
+// restore later (or on another device, if you store it on your server)
+await view.importState(JSON.parse(localStorage.getItem("my-layout")));
+
+// autosave after every drag
+view.on("change", (state) => saveToServer(state));`
   },
   {
     id: 'large',

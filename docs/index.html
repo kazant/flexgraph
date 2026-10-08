@@ -81,10 +81,23 @@ const view = createGraph(document.getElementById("graph"), data, { direction: "L
   <h3>Methods</h3>
   <pre>view.relayout()            // full layout, respects pinned nodes
 view.updateGraph(data)     // incremental: existing nodes stay where they are
-view.exportState()         // { nodes: { id: { x, y, pinned } }, transform }
+view.exportState()         // { nodes: { id: { x, y, pinned } }, edges: { id: [[x, y], …] }, transform }
 view.importState(state)
 view.pin(id) / view.unpin(id) / view.fit() / view.zoomBy(1.2) / view.select(id)
 view.on("nodeclick", ({ node }) => …)</pre>
+  <h3>Saving a layout</h3>
+  <p>Users can drag nodes until the lines run the way they want. <code>exportState()</code> returns plain JSON with the node positions, pins, zoom and the exact edge lines. Store it anywhere (your database, <code>localStorage</code>, a file) and pass it to <code>importState()</code> to recreate the same picture. If a node has changed size since it was saved (other fonts, edited labels), the lines on that node are routed fresh instead.</p>
+  <pre>// save
+const state = view.exportState();
+await fetch("/api/diagrams/42/layout", { method: "PUT", body: JSON.stringify(state) });
+
+// restore
+const view = createGraph(el, data);
+await view.ready;
+await view.importState(await (await fetch("/api/diagrams/42/layout")).json());
+
+// or autosave after every drag
+view.on("change", (state) => save(state));</pre>
 </section>
 
 <section id="pricing">
