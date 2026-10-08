@@ -66,7 +66,7 @@ export async function handlePortal(req, env, path) {
       subscriptions: subs.map((s) => ({ id: s.id, plan: s.plan, status: s.status, quantity: s.quantity, offlineAddon: !!s.offline_addon, currentPeriodEnd: s.current_period_end, billingPortalUrl: s.billing_portal_url })),
       projects: out,
       checkoutUrl: env.CHECKOUT_URL || null,
-      pricing: { monthly: 50, annual: 500, offlineMonthly: 75, currency: 'USD' }
+      pricing: { monthly: 79, annual: 790, offlineMonthly: 75, currency: 'USD' }
     });
   }
 

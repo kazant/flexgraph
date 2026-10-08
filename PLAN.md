@@ -2,7 +2,7 @@
 
 A replacement for Dagre that gives full control over layout and produces clean, logical edge routing.
 
-The library is written in plain JavaScript (with optional CSS) and distributed as a commercial npm package that requires a license key. The price is **$50 per month per project**, and the library verifies that each project has an active, paid subscription (see sections 11 and 12).
+The library is written in plain JavaScript (with optional CSS) and distributed as a commercial npm package that requires a license key. The price is **$79 per month per project**, and the library verifies that each project has an active, paid subscription (see sections 11 and 12).
 
 ## 1. Why Dagre falls short
 
@@ -262,7 +262,7 @@ setLicenseKey("FG-PRJ-7K2M-9QXA-...");   // project license key
 const view = createGraph(document.getElementById("graph"), data, options);
 ```
 
-## 12. Licensing & payment enforcement ($50/month per project)
+## 12. Licensing & payment enforcement ($79/month per project)
 
 ### What counts as a "project"
 
@@ -350,7 +350,7 @@ The license server logs every validation request (key, domain, timestamp, librar
 
 ### Payments and automation
 
-- The customer subscribes on your website: $50/month, quantity = number of projects.
+- The customer subscribes on your website: $79/month, quantity = number of projects.
 - The payment provider sends webhooks for: subscription created, payment succeeded, payment failed, subscription canceled.
 - The license server updates the database:
   - `customers` (id, email, company)
@@ -382,8 +382,8 @@ Verify current fees, features, and tax handling with each provider before choosi
 
 ### Pricing notes
 
-- $50/month per project (the core plan).
-- Optional annual plan, e.g. $500/year per project (two months free), for better cash flow and less churn.
+- $79/month per project (the core plan).
+- Optional annual plan, e.g. $790/year per project (two months free), for better cash flow and less churn.
 - Optional offline license add-on (see above).
 - Optional free licenses for open-source or non-commercial projects to grow adoption.
 

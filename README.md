@@ -104,7 +104,7 @@ const { layout, routing } = layoutGraph(data, { direction: "LR" });   // Maps of
 
 ## Licensing
 
-Commercial: **$50 per month per project** (see [LICENSE.md](LICENSE.md)). On `localhost` the library runs free in Development mode. On other domains it validates the key online (`POST https://license.flexgraph.example/v1/validate`), verifies the server's ECDSA-signed token with the public key in the bundle, caches it for 7 days, and keeps working through server outages (cached token + 14 days; first-time visitors run "unverified"). Unpaid/canceled projects show a "License inactive" overlay.
+Commercial: **$79 per month per project** (see [LICENSE.md](LICENSE.md)). On `localhost` the library runs free in Development mode. On other domains it validates the key online (`POST https://license.flexgraph.example/v1/validate`), verifies the server's ECDSA-signed token with the public key in the bundle, caches it for 7 days, and keeps working through server outages (cached token + 14 days; first-time visitors run "unverified"). Unpaid/canceled projects show a "License inactive" overlay.
 
 **Customer requirements**
 

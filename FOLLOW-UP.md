@@ -60,8 +60,8 @@ The key pair in the repo now (`server/.dev.vars` + `src/license/public-key.js`) 
 ## 5. Payment provider
 
 - [ ] Choose a provider. Lemon Squeezy or Paddle handle VAT/MVA for you (merchant of record); Stripe is cheaper but you handle taxes. **Check current fees and tax handling yourself.**
-- [ ] Create the product "Project license": $50/month, quantity = number of projects
-- [ ] Optional: annual plan $500/year (put its variant ids in `ANNUAL_VARIANT_IDS`)
+- [ ] Create the product "Project license": $79/month, quantity = number of projects
+- [ ] Optional: annual plan $790/year (put its variant ids in `ANNUAL_VARIANT_IDS`)
 - [ ] Optional: offline add-on $75/month (pass `custom_data: { offline: true }` at checkout)
 - [ ] Add a webhook to `https://license.yourdomain/v1/webhooks/lemonsqueezy` (or `/stripe`) with all subscription events: created, updated, payment success/failed/recovered, cancelled, expired, resumed
 - [ ] Put the checkout URL in `CHECKOUT_URL` in `wrangler.toml`

@@ -36,7 +36,7 @@ npm run deploy
 
 Then:
 
-1. **Payment provider:** create a product "FlexGraph project license" — $50/month (and optionally $500/year) with quantity = number of projects. Point the webhook to `https://license.flexgraph.example/v1/webhooks/lemonsqueezy` with the subscription events (created, updated, payment success/failed/recovered, cancelled, expired, resumed). Put the checkout URL in `CHECKOUT_URL`. For the offline add-on pass `custom_data: { offline: true }` at checkout.
+1. **Payment provider:** create a product "FlexGraph project license" — $79/month (and optionally $790/year) with quantity = number of projects. Point the webhook to `https://license.flexgraph.example/v1/webhooks/lemonsqueezy` with the subscription events (created, updated, payment success/failed/recovered, cancelled, expired, resumed). Put the checkout URL in `CHECKOUT_URL`. For the offline add-on pass `custom_data: { offline: true }` at checkout.
 2. **Uptime monitoring:** monitor `https://license.flexgraph.example/health`.
 3. **Publish:** `FLEXGRAPH_ADMIN_URL=https://license.flexgraph.example FLEXGRAPH_ADMIN_TOKEN=… npm run publish:private` (repo root).
 4. **Trial package:** `npm run build:trial` and publish `dist-trial` publicly as `@flexgraph-labs/flexgraph-trial`.
