@@ -21,7 +21,7 @@ The links are already in place: the Sponsor button on GitHub (`.github/FUNDING.y
 ## 3. Publishing new versions
 
 ```bash
-npm version patch      # or minor / major; updates package.json and creates a git tag
+npm version patch      # or minor / major; updates package.json and src/version.js, creates a git tag
 npm publish            # runs the tests and the build first; asks for your 2FA code
 git push --follow-tags
 ```

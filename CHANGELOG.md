@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] — 2026-10-09
+
+### Fixed
+- `VERSION` reported 1.0.0 in 1.0.1; it is now synced from package.json by `npm version`, and a test checks it.
+
 ## [1.0.1] — 2026-10-09
 
 ### Changed

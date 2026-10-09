@@ -50,7 +50,8 @@
     "build": "node scripts/build.mjs",
     "build:site": "node scripts/build-site.mjs",
     "test": "node --test \"test/**/*.test.js\"",
-    "prepublishOnly": "npm test && npm run build"
+    "prepublishOnly": "npm test && npm run build",
+    "version": "node scripts/sync-version.mjs && git add src/version.js"
   },
   "devDependencies": {
     "esbuild": "0.24.2"
