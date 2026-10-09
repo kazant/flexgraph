@@ -81,6 +81,8 @@ view.updateGraph(data)     // incremental: existing nodes stay where they are
 view.exportState()         // { nodes: { id: { x, y, pinned } }, edges: { id: [[x, y], …] }, transform }
 view.importState(state)
 view.pin(id) / view.unpin(id) / view.fit() / view.zoomBy(1.2) / view.select(id)
+view.fitFlow(id)           // zoom so the whole flow through a node fills the view (default: the selection)
+view.fitNodes(["a", "b"])  // zoom so these nodes and the lines between them fill the view
 view.on("nodeclick", ({ node, previous, next }) => …)
 view.on("contextmenu", ({ kind, node, edge, group, event }) => …)   // right-click
 view.getConnections(id)                 // { previous, next, incoming, outgoing }

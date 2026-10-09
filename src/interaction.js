@@ -33,6 +33,7 @@ export function attachInteraction(view) {
   };
 
   function onPointerDown(ev) {
+    view._stopZoom();
     if (ev.button !== undefined && ev.button !== 0 && ev.pointerType === 'mouse') return;
     if (ev.target.closest && ev.target.closest('.fg-controls')) return;
     // interactive content inside nodes (inputs, buttons, links) keeps working
@@ -104,6 +105,7 @@ export function attachInteraction(view) {
   }
 
   function onWheel(ev) {
+    view._stopZoom();
     if (!o().zoomable) return;
     ev.preventDefault();
     const k = r.transform.k * Math.exp(-ev.deltaY * (ev.ctrlKey ? 0.01 : 0.0015));

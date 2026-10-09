@@ -180,6 +180,71 @@ export class GraphView {
     this.setTransform({ k, x: (vw - b.width * k) / 2 - b.x * k, y: (vh - b.height * k) / 2 - b.y * k });
   }
 
+  /**
+   * Zoom and pan so the given nodes (and the edges between them) fill the view, as large as possible.
+   * @returns {boolean} false if none of the ids exist
+   */
+  fitNodes(ids, { padding = 40, maxZoom = this.options.maxZoom, animate = this.options.animate, edges } = {}) {
+    const set = new Set([...ids].map(String).filter((id) => this.positions.has(id)));
+    if (!set.size) return false;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+    for (const id of set) { const r = this.positions.get(id); add(r.x, r.y); add(r.x + r.width, r.y + r.height); }
+    // include the lines, so routes that detour around other nodes are not cut off
+    const edgeIds = edges || this.model.edges.filter((e) => set.has(e.source) && set.has(e.target)).map((e) => e.id);
+    for (const id of edgeIds) for (const p of this.routing?.paths.get(id)?.points || []) add(p.x, p.y);
+    const vp = this.renderer.viewport;
+    const vw = vp.clientWidth || 800, vh = vp.clientHeight || 600;
+    const w = x1 - x0, h = y1 - y0;
+    let k = Math.min((vw - 2 * padding) / (w || 1), (vh - 2 * padding) / (h || 1), maxZoom);
+    k = clamp(k, this.options.minZoom, this.options.maxZoom);
+    this._animateTransform({ k, x: (vw - w * k) / 2 - x0 * k, y: (vh - h * k) / 2 - y0 * k }, animate);
+    return true;
+  }
+
+  /**
+   * Fit the whole flow through a node or edge (everything upstream and downstream, the same set the hover
+   * highlight shows) to the view, as large as possible. Defaults to the selected node or edge.
+   * @param {string | {kind:'node'|'edge', id:string} | object} [target] node id, a selection, or an edge object
+   *   as passed to onEdgeClick / onEdgeContextMenu (works for edges without an id)
+   * @returns {boolean} false if there is nothing to fit
+   */
+  fitFlow(target = this.selected, { mode = 'chain', ...opts } = {}) {
+    if (target == null) return false;
+    let tgt;
+    if (typeof target === 'string') tgt = { kind: 'node', id: target };
+    else if (target.kind) tgt = { kind: target.kind, id: String(target.id) };
+    else {
+      const e = this.model?.edges.find((x) => x.data === target);
+      if (!e) return false;
+      tgt = { kind: 'edge', id: e.id };
+    }
+    const known = tgt.kind === 'edge' ? this.model?.edgeById : this.model?.nodeById;
+    if (!known?.has(tgt.id)) return false;
+    const hl = highlightSet(this.model.edges, tgt, mode);
+    return this.fitNodes(hl.nodes, { ...opts, edges: [...hl.edges] });
+  }
+
+  /** @internal user input takes over from a running fit animation */
+  _stopZoom() { if (this._zoomAnim && typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this._zoomAnim); this._zoomAnim = 0; }
+
+  _animateTransform(to, animate) {
+    this._stopZoom();
+    const from = this.getTransform();
+    if (!animate || reducedMotion() || typeof requestAnimationFrame === 'undefined') { this.setTransform(to); return; }
+    const dur = this.options.animationDuration, t0 = performance.now();
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / dur), e = ease(t);
+      // interpolate zoom geometrically so the zoom speed feels even
+      const k = from.k * Math.pow(to.k / from.k, e);
+      const s = (to.k - from.k) ? (k - from.k) / (to.k - from.k) : e;
+      this.setTransform({ k, x: from.x + (to.x - from.x) * s, y: from.y + (to.y - from.y) * s });
+      if (t < 1) this._zoomAnim = requestAnimationFrame(step);
+    };
+    this._zoomAnim = requestAnimationFrame(step);
+  }
+
   zoomAt(k, clientX, clientY) {
     const t = this.renderer.transform;
     k = clamp(k, this.options.minZoom, this.options.maxZoom);
@@ -211,6 +276,7 @@ export class GraphView {
 
   destroy() {
     cancelAnimationFrame(this._anim);
+    this._stopZoom();
     this._detach();
     this.renderer.destroy();
     this._listeners.clear();

@@ -37,9 +37,11 @@ function load(name) {
     onNodeContextMenu: (node, ev, { previous, next }) => openMenu(ev, node.label ?? node.id, [
       view.exportState().nodes[node.id]?.pinned ? ['Unpin', () => view.unpin(node.id)] : ['Pin here', () => view.pin(node.id)],
       [`Select (${previous.length} before, ${next.length} after)`, () => view.select(node.id)],
+      ['Fit flow to view', () => { view.select(node.id); view.fitFlow(node.id); }],
       ['Remove node', () => update({ ...data, nodes: data.nodes.filter((n) => n.id !== node.id), edges: data.edges.filter((e) => e.source !== node.id && e.target !== node.id) })]
     ]),
     onEdgeContextMenu: (edge, ev) => openMenu(ev, `${edge.source} → ${edge.target}`, [
+      ['Fit flow to view', () => view.fitFlow(edge)],
       ['Remove edge', () => update({ ...data, edges: data.edges.filter((e) => e !== edge && !(e.id != null && e.id === edge.id)) })]
     ]),
     onBackgroundContextMenu: (ev) => openMenu(ev, 'Graph', [['Relayout', () => timed(() => view.relayout())], ['Fit to screen', () => view.fit()]])
@@ -87,6 +89,7 @@ $('hops').onchange = () => view.setOptions({ lineHops: $('hops').checked }, { re
 $('hover').onchange = () => view.setOptions({ hoverHighlight: $('hover').value }, { relayout: false });
 $('animate').onchange = () => view.setOptions({ animate: $('animate').checked }, { relayout: false });
 $('relayout').onclick = () => timed(() => view.relayout());
+$('fitflow').onclick = () => { if (!view.fitFlow()) $('s-msg').textContent = 'Select a node first (click it), then press Fit flow'; };
 $('unpin').onclick = () => { view.unpinAll(); timed(() => view.relayout()); };
 $('add').onclick = () => {
   const ids = data.nodes.map((n) => n.id);

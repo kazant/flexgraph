@@ -167,6 +167,15 @@ export interface Connections {
   outgoing: EdgeSpec[];
 }
 
+export interface FitOptions {
+  /** Space around the fitted area in px. Default 40. */
+  padding?: number;
+  /** Highest zoom to use. Default: the graph's maxZoom option (4). */
+  maxZoom?: number;
+  /** Animate the zoom. Default: the graph's animate option. */
+  animate?: boolean;
+}
+
 export interface GraphView {
   readonly ready: Promise<GraphView>;
   readonly options: GraphOptions;
@@ -183,6 +192,13 @@ export interface GraphView {
   /** Previous / next nodes of a node (direct, or the whole chain with { chain: true }). null if the id is unknown. */
   getConnections(id: string, opts?: { chain?: boolean }): Connections | null;
   fit(opts?: { padding?: number; maxZoom?: number }): void;
+  /**
+   * Zoom and pan so the whole flow through a node or edge (everything upstream and downstream) fills the view,
+   * as large as possible. Defaults to the selected node or edge. Returns false if there is nothing to fit.
+   */
+  fitFlow(target?: string | Selection | EdgeSpec, opts?: FitOptions & { mode?: 'chain' | 'neighbors' }): boolean;
+  /** Zoom and pan so the given nodes and the edges between them fill the view, as large as possible. */
+  fitNodes(ids: Iterable<string>, opts?: FitOptions): boolean;
   zoomBy(factor: number): void;
   zoomTo(k: number): void;
   zoomAt(k: number, clientX: number, clientY: number): void;

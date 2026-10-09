@@ -49,6 +49,7 @@ const view = createGraph(document.getElementById("graph"), {
 
 view.relayout();               // full auto layout (respects pins)
 view.updateGraph(newData);     // incremental: existing nodes stay put
+view.fitFlow("b");             // zoom so the whole flow through "b" fills the view; no argument = the selection
 view.getConnections("b");      // { previous: [nodeA], next: [], incoming, outgoing }; { chain: true } for the whole chain
 view.exportState();            // positions, pins, zoom and the exact edge lines as JSON
 view.importState(saved);       // recreates the saved picture, lines included

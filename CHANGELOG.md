@@ -5,6 +5,9 @@ All notable changes to this project are documented here. This project follows [S
 ## [1.1.0] — 2026-10-09
 
 ### Added
+- `view.fitFlow(id?)`: zooms and pans so the whole flow through a node or edge (everything upstream and
+  downstream) fills the view, as large as possible; defaults to the selection. `view.fitNodes(ids)` does the
+  same for any set of nodes. Both include the lines, animate smoothly and stop when the user pans or zooms.
 - Right-click support for custom context menus: `onNodeContextMenu(node, event, { previous, next })`,
   `onEdgeContextMenu`, `onGroupContextMenu`, `onBackgroundContextMenu` and a `contextmenu` event with
   `{ kind, node | edge | group, event }`. FlexGraph has no built-in menu; the browser menu is only suppressed for
