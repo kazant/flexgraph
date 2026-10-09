@@ -13,7 +13,7 @@ FlexGraph is now open source (MIT) and published as `@kazant/flexgraph`. The ear
 
 - [x] Applied for GitHub Sponsors (2026-10-09): profile, Stripe payouts and tax form done; submitted for review
 - [ ] Wait for the approval email from GitHub (usually a few days); until then the Sponsor links show a page that is not live yet
-- [ ] Publish the sponsor tiers (4 drafts: $5, $25, $100 monthly and $10 one-time) at https://github.com/sponsors/kazant/dashboard/tiers; prices cannot be changed after publishing
+- [x] Sponsor tiers published: $5, $25, $100 monthly and $10 one-time (prices cannot be changed; retire and replace a tier to change it)
 - [ ] When someone sponsors at $25 or $100: add their name or logo to the README / website (a sponsors section)
 
 The links are already in place: the Sponsor button on GitHub (`.github/FUNDING.yml`), `npm fund` (`funding` in `package.json`), the README badge and "Support" section, the docs page ("Support the project") and the showcase header and footer.
