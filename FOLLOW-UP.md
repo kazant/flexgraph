@@ -6,8 +6,8 @@ FlexGraph is now open source (MIT) and published as `@kazant/flexgraph`. The ear
 
 - [x] MIT license, `package.json` (name, author, repository, funding), README for npm
 - [x] License check, license server and pricing removed from `main`
-- [ ] GitHub repo public
-- [ ] Published to npm (`npm login` as `kazant`, then `npm publish`)
+- [x] GitHub repo public: https://github.com/kazant/flexgraph
+- [x] Published to npm: https://www.npmjs.com/package/@kazant/flexgraph (publishing needs 2FA; run `npm publish` in your own terminal so it can ask for the code)
 
 ## 2. Donations
 
@@ -20,7 +20,7 @@ The links are already in place: the Sponsor button on GitHub (`.github/FUNDING.y
 
 ```bash
 npm version patch      # or minor / major; updates package.json and creates a git tag
-npm publish            # runs the tests and the build first (prepublishOnly)
+npm publish            # runs the tests and the build first; asks for your 2FA code
 git push --follow-tags
 ```
 
