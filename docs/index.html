@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--commercial--><a href="#pricing">Pricing</a><!--/commercial--><!--commercial--><a href="#csp">CSP</a><a href="#offline">Offline</a><!--/commercial--><a href="#built">How it's built</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
+<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--commercial--><a href="#pricing">Pricing</a><!--/commercial--><!--commercial--><a href="#csp">CSP</a><a href="#offline">Offline</a><!--/commercial--><a href="#built">How it's built</a><a href="#maintenance">Maintenance</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
 <header>
   <h1>Relationship graphs with clean, logical lines.</h1>
   <p class="lead">A Dagre replacement in plain HTML, CSS &amp; JavaScript: fewer crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
@@ -166,6 +166,36 @@ view.on("change", (state) => save(state));</pre>
   <p>License verification uses <code>fetch</code>, Web Crypto (ECDSA P-256 signatures, with a pure-JS fallback on plain http pages) and <code>localStorage</code> to cache the signed token. The license server runs on Cloudflare Workers with D1 (database) and R2 (package storage).</p>
 <!--/commercial-->
   <p>Development needs Node.js 20 or newer; tests use the built-in <code>node --test</code> runner.</p>
+</section>
+
+<section id="maintenance">
+  <h2>Maintenance and risk</h2>
+  <p>FlexGraph is an independent library. If you build on it, you should know what happens if development slows down or stops, and how to protect yourself.</p>
+  <h3>What keeps working</h3>
+  <p>The code you have installed keeps working as it is. There are no runtime dependencies that can break, disappear or be compromised, and the library only uses long-established, standardized browser features (SVG, CSS custom properties, Pointer Events, Web Workers). Your graph data and saved layouts are plain JSON in a documented format.</p>
+  <h3>What you would lose</h3>
+  <table>
+    <tr><th>Risk</th><th>Likelihood</th><th>What it means</th><th>How to reduce it</th></tr>
+    <tr><td>No bug fixes</td><td>Medium</td><td>Layout or routing problems in unusual graphs would stay unfixed.</td><td>Test with your own real graphs before you rely on it; pin the version that works for you.</td></tr>
+    <tr><td>No security fixes</td><td>Low</td><td>The library never runs or loads code at runtime. The main risk is HTML you pass in yourself (the <code>html</code> field and <code>renderNode</code> strings) — labels are always inserted as plain text.</td><td>Escape user-provided content in custom node HTML, or return DOM elements from <code>renderNode</code>.</td></tr>
+    <tr><td>Browser changes</td><td>Low</td><td>The features used are stable web standards that browsers keep compatible.</td><td>Nothing needed in practice.</td></tr>
+    <tr><td>Tooling drift</td><td>Low–medium</td><td>New TypeScript, bundler or framework versions might need small adjustments (types, import paths).</td><td>The package is plain ES modules + UMD with no build step required; adjustments can be made locally.</td></tr>
+    <tr><td>No support or new features</td><td>Medium</td><td>Questions go unanswered and requested features never arrive.</td><td>Keep the integration thin (one wrapper component), so you can extend or replace it.</td></tr>
+  </table>
+  <h3>How to protect yourself</h3>
+  <ul>
+    <li><b>Pin an exact version</b> (<code>"1.0.0"</code>, not <code>"^1.0.0"</code>) and keep a copy of the package (the built files or the <code>.tgz</code>) in your own repository or internal registry, so you never depend on being able to download it again.</li>
+    <li><b>Keep your data portable.</b> Nodes, edges and groups map directly onto Dagre (nodes, edges, clusters) and ELK (which also has ports), so moving to another library is a mapping exercise. Layouts saved with <code>exportState()</code> are plain coordinates.</li>
+    <li><b>Wrap it.</b> Use FlexGraph through one component or module in your app, so a replacement only touches one place.</li>
+  </ul>
+<!--commercial-->
+  <h3>The license check</h3>
+  <p>If the license service is ever shut down, graphs keep working: an unreachable server never locks the graph (first-time visitors run "unverified", with a console warning). Two things to be aware of:</p>
+  <ul>
+    <li><b>Installing new copies</b> needs the private registry. Keep the package tarball, as above.</li>
+    <li><b>The license domain must stay in safe hands.</b> The graph only locks when the license server rejects a key or sends an invalid answer. If the domain were ever taken over by someone else, they could do exactly that, so keep it renewed.</li>
+  </ul>
+<!--/commercial-->
 </section>
 
 <section id="faq">

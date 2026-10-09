@@ -109,6 +109,8 @@ The key pair in the repo now (`server/.dev.vars` + `src/license/public-key.js`) 
 
 ## Later (nice to have)
 
+- [ ] Decide on an end-of-life promise for customers (e.g. "if FlexGraph is discontinued, we publish a final build without the license check"). Companies weigh this when choosing a library; if you make it, add it to the Maintenance section in `docs/index.html` and to `LICENSE.md`
+- [ ] Keep the license domain renewed (auto-renew, long registration): if someone else ever got it, they could lock customer sites
 - [ ] Rotate the signing key periodically (support several public keys / `kid` in the library first)
 - [ ] Speed up routing for 1000+ node graphs (the Web Worker option already keeps the UI responsive)
 - [ ] Nested groups (only one level of groups is supported now)
