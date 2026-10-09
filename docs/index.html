@@ -149,40 +149,38 @@ view.on("change", (state) => save(state));</pre>
   <h3>What data does the license check send?</h3><p>The license key, the hostname and the library version. Nothing about your users. See the <a href="PRIVACY.md">privacy policy</a>.</p>
 <!--/commercial-->
   <h3>Can I use it with React / Vue / Svelte / Angular?</h3><p>Yes. FlexGraph has no framework dependencies: create the graph when the component is mounted and call <code>view.destroy()</code> when it is removed. In React that is a <code>useEffect</code>, in Vue <code>onMounted</code> / <code>onUnmounted</code>, in Svelte <code>onMount</code>.</p>
-  <h3>How do I use it in Angular?</h3><p>Create the graph in <code>ngAfterViewInit</code> (the element exists then) and destroy it in <code>ngOnDestroy</code>. Add the stylesheet to <code>"styles"</code> in <code>angular.json</code>: <code>"node_modules/@flexgraph-labs/flexgraph/style.css"</code>.</p>
-  <pre>import { Component, ElementRef, Input, NgZone, ViewChild, AfterViewInit, OnChanges, OnDestroy, inject, signal } from "@angular/core";
+  <h3>How do I use it in Angular?</h3><p>FlexGraph works with zoneless Angular (the default in new projects): create the graph once the element has rendered, update it from an <code>effect</code> when the input changes, and destroy it with the component. Click callbacks can set signals directly; that is enough to update the view. Add the stylesheet to <code>"styles"</code> in <code>angular.json</code>: <code>"node_modules/@flexgraph-labs/flexgraph/style.css"</code>.</p>
+  <pre>import { Component, ElementRef, DestroyRef, afterNextRender, effect, inject, input, signal, viewChild } from "@angular/core";
 import { createGraph, type GraphData, type GraphView } from "@flexgraph-labs/flexgraph";
 
 @Component({
   selector: "app-graph",
-  standalone: true,
-  template: `&lt;div #host style="height: 600px"&gt;&lt;/div&gt;`
+  template: `
+    &lt;div #host style="height: 600px"&gt;&lt;/div&gt;
+    @if (selected(); as s) { &lt;p&gt;Selected: {{ s }}&lt;/p&gt; }
+  `
 })
-export class GraphComponent implements AfterViewInit, OnChanges, OnDestroy {
-  @Input({ required: true }) data!: GraphData;
-  @ViewChild("host") host!: ElementRef&lt;HTMLDivElement&gt;;
+export class GraphComponent {
+  data = input.required&lt;GraphData&gt;();
+  host = viewChild.required&lt;ElementRef&lt;HTMLDivElement&gt;&gt;("host");
   selected = signal&lt;string | null&gt;(null);
-  private zone = inject(NgZone);
   private view?: GraphView;
 
-  ngAfterViewInit() {
-    // outside the zone: dragging and zooming don't trigger change detection
-    this.view = this.zone.runOutsideAngular(() => createGraph(this.host.nativeElement, this.data, {
-      direction: "LR",
-      onNodeClick: (node) =>
-        this.zone.run(() => this.selected.set(node.label ?? node.id))   // back inside to update the UI
-    }));
-  }
-
-  ngOnChanges() {
-    this.view?.updateGraph(this.data);   // keeps existing nodes in place
-  }
-
-  ngOnDestroy() {
-    this.view?.destroy();
+  constructor() {
+    afterNextRender(() => {
+      this.view = createGraph(this.host().nativeElement, this.data(), {
+        direction: "LR",
+        onNodeClick: (node) => this.selected.set(node.label ?? node.id)   // a signal update re-renders
+      });
+    });
+    effect(() => {
+      const data = this.data();
+      this.view?.updateGraph(data);   // existing nodes stay in place
+    });
+    inject(DestroyRef).onDestroy(() => this.view?.destroy());
   }
 }</pre>
-  <p>Creating the graph with <code>runOutsideAngular</code> is optional but keeps dragging and zooming smooth; use <code>zone.run</code> (or a signal, as above) in callbacks that change what the component shows. For very large graphs, copy <code>flexgraph.worker.js</code> to your assets and pass its URL as the <code>worker</code> option.</p>
+  <p>Still on zone.js? The same component works; optionally create the graph inside <code>NgZone.runOutsideAngular</code> so dragging and zooming don't trigger change detection. For very large graphs, copy <code>flexgraph.worker.js</code> to your assets and pass its URL as the <code>worker</code> option.</p>
 </section>
 
 <footer>© FlexGraph Labs AS<!--commercial--> · <a href="../LICENSE.md">License (EULA)</a> · <a href="TERMS.md">Terms</a> · <a href="PRIVACY.md">Privacy</a><!--/commercial--></footer>
