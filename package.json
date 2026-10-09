@@ -1,6 +1,6 @@
 {
   "name": "@kazant/flexgraph",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Flexible relationship graph for the browser: layered layout with strong crossing minimization, ports, orthogonal edge routing with obstacle avoidance, groups and constraints. Plain HTML, CSS & JS.",
   "license": "MIT",
   "author": "Alexander Pettersen (https://github.com/kazant)",
