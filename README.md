@@ -19,6 +19,7 @@ See [PLAN.md](PLAN.md) for the full design.
 npm install
 npm run dev        # http://localhost:5173/ (showcase), /demo/ (playground), /docs/
 npm run build:site # site/ (what Vercel deploys: showcase + docs + playground on dist/)
+                   # prices, license keys, portal, offline and legal texts are hidden unless SHOW_COMMERCIAL=1
 npm test           # library tests
 npm run test:server
 npm run compare    # quality vs Dagre on the sample graphs

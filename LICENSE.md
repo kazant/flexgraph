@@ -11,7 +11,7 @@ This agreement ("Agreement") is between **FlexGraph Labs AS**, org. no. 999 999 
 - **Software**: the FlexGraph JavaScript library, CSS, type definitions and documentation, in any version, including the trial build.
 - **Project**: one application with **one production domain** (optionally including its subdomains when the Customer selects the wildcard option) and **up to three non-production domains** (staging, test, preview). `localhost` and `127.0.0.1` may always be used for development at no cost.
 - **License Key**: the key issued for one Project.
-- **Subscription**: the paid recurring plan for one or more Projects (<!--pricing-->USD 79 per Project per month, or the annual price shown at purchase<!--/pricing--><!--no-pricing:at the price shown at purchase-->).
+- **Subscription**: the paid recurring plan for one or more Projects (<!--commercial-->USD 79 per Project per month, or the annual price shown at purchase<!--/commercial--><!--no-commercial:at the price shown at purchase-->).
 
 ## 2. License grant
 

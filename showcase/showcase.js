@@ -11,7 +11,7 @@ const names = (list) => list.length ? list.map((x) => x.label ?? x.id).join(", "
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 $('#version').textContent = 'v' + VERSION;
-const showLicense = (s) => { $('#license').textContent = s.mode + (s.reason ? ` (${s.reason})` : ''); };
+const showLicense = (s) => { if ($('#license')) $('#license').textContent = s.mode + (s.reason ? ` (${s.reason})` : ''); };
 showLicense(getLicenseState());
 onLicenseChange(showLicense);
 

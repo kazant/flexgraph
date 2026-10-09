@@ -40,8 +40,9 @@ function load(name) {
   });
   view.on('layout', () => stats());
   view.on('dragend', () => stats());
-  view.on('license', (s) => { $('s-lic').textContent = s.mode + (s.reason ? ` (${s.reason})` : ''); });
-  { const s = getLicenseState(); $('s-lic').textContent = s.mode + (s.reason ? ` (${s.reason})` : ''); }
+  const showLic = (s) => { if ($('s-lic')) $('s-lic').textContent = s.mode + (s.reason ? ` (${s.reason})` : ''); };
+  view.on('license', showLic);
+  showLic(getLicenseState());
   view.ready.then(() => { $('s-time').textContent = Math.round(performance.now() - t0); stats(); });
 }
 

@@ -31,16 +31,24 @@
   </style>
 </head>
 <body>
-<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--pricing--><a href="#pricing">Pricing</a><!--/pricing--><a href="#csp">CSP</a><a href="#offline">Offline</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
+<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--commercial--><a href="#pricing">Pricing</a><!--/commercial--><!--commercial--><a href="#csp">CSP</a><a href="#offline">Offline</a><!--/commercial--><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
 <header>
   <h1>Relationship graphs with clean, logical lines.</h1>
   <p class="lead">A Dagre replacement in plain HTML, CSS &amp; JavaScript: fewer crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
   <div id="live"></div>
-  <p><!--pricing--><a class="btn" href="#pricing">$79 / month per project</a> &nbsp; <!--/pricing--><a href="../demo/">Open the full demo →</a></p>
+  <p><!--commercial--><a class="btn" href="#pricing">$79 / month per project</a> &nbsp; <!--/commercial--><a href="../demo/">Open the full demo →</a></p>
 </header>
 
 <section id="start">
   <h2>Getting started</h2>
+<!--no-commercial:  <p>Install the package and render a graph into any element with a size:</p>
+  <pre>npm install @flexgraph-labs/flexgraph</pre>
+  <pre>import { createGraph } from "@flexgraph-labs/flexgraph";
+import "@flexgraph-labs/flexgraph/style.css";
+
+const view = createGraph(document.getElementById("graph"), data, { direction: "LR" });</pre>
+-->
+<!--commercial-->
   <p>1. Subscribe, then get your npm token in the <a href="https://portal.flexgraph.example/portal/">customer portal</a> and add an <code>.npmrc</code> to your project:</p>
   <pre>@flexgraph-labs:registry=https://npm.flexgraph.example/
 //npm.flexgraph.example/:_authToken=${FLEXGRAPH_NPM_TOKEN}</pre>
@@ -53,6 +61,7 @@ setLicenseKey("FG-PRJ-XXXX-XXXX-XXXX-XXXX");
 const view = createGraph(document.getElementById("graph"), data, { direction: "LR" });</pre>
   <p>3. Register your production domain (and up to 3 staging domains) for the project in the portal. On <code>localhost</code> everything works without a key.</p>
   <p>Want to try first? <code>npm install @flexgraph-labs/flexgraph-trial</code> — full features on localhost with a watermark.</p>
+<!--/commercial-->
 </section>
 
 <section id="api">
@@ -103,7 +112,7 @@ await view.importState(await (await fetch("/api/diagrams/42/layout")).json());
 view.on("change", (state) => save(state));</pre>
 </section>
 
-<!--pricing-->
+<!--commercial-->
 <section id="pricing">
   <h2>Pricing</h2>
   <div class="grid">
@@ -116,8 +125,9 @@ view.on("change", (state) => save(state));</pre>
   <p>Your graphs keep working for 14 days and we email you on day 1, 7 and 13. After that, graphs on your site show a <b>“License inactive”</b> overlay to your users until the payment goes through. A canceled subscription keeps working until the end of the paid period.</p>
   <p class="muted">Open-source and non-commercial projects: ask us about a free license.</p>
 </section>
-<!--/pricing-->
+<!--/commercial-->
 
+<!--commercial-->
 <section id="csp">
   <h2>Content Security Policy</h2>
   <p>The library validates its license against <code>https://license.flexgraph.example</code>. If your site uses a CSP, allow it in <code>connect-src</code>:</p>
@@ -130,15 +140,52 @@ view.on("change", (state) => save(state));</pre>
   <p>With the offline add-on, the portal issues a signed key bound to your domain (<code>FG-OFF-…</code>). It needs no network access and is valid for the paid period + 14 days. A new key is emailed every month — update it in your project:</p>
   <pre>setLicenseKey(process.env.FLEXGRAPH_OFFLINE_KEY);</pre>
 </section>
+<!--/commercial-->
 
 <section id="faq">
   <h2>FAQ</h2>
+<!--commercial-->
   <h3>What counts as a project?</h3><p>One application: one production domain plus up to three non-production domains. Three applications need three licenses.</p>
   <h3>What data does the license check send?</h3><p>The license key, the hostname and the library version. Nothing about your users. See the <a href="PRIVACY.md">privacy policy</a>.</p>
-  <h3>Can I use it with React / Vue / Svelte?</h3><p>Yes — create the graph in a mount effect and call <code>view.destroy()</code> on unmount.</p>
+<!--/commercial-->
+  <h3>Can I use it with React / Vue / Svelte / Angular?</h3><p>Yes. FlexGraph has no framework dependencies: create the graph when the component is mounted and call <code>view.destroy()</code> when it is removed. In React that is a <code>useEffect</code>, in Vue <code>onMounted</code> / <code>onUnmounted</code>, in Svelte <code>onMount</code>.</p>
+  <h3>How do I use it in Angular?</h3><p>Create the graph in <code>ngAfterViewInit</code> (the element exists then) and destroy it in <code>ngOnDestroy</code>. Add the stylesheet to <code>"styles"</code> in <code>angular.json</code>: <code>"node_modules/@flexgraph-labs/flexgraph/style.css"</code>.</p>
+  <pre>import { Component, ElementRef, Input, NgZone, ViewChild, AfterViewInit, OnChanges, OnDestroy, inject, signal } from "@angular/core";
+import { createGraph, type GraphData, type GraphView } from "@flexgraph-labs/flexgraph";
+
+@Component({
+  selector: "app-graph",
+  standalone: true,
+  template: `&lt;div #host style="height: 600px"&gt;&lt;/div&gt;`
+})
+export class GraphComponent implements AfterViewInit, OnChanges, OnDestroy {
+  @Input({ required: true }) data!: GraphData;
+  @ViewChild("host") host!: ElementRef&lt;HTMLDivElement&gt;;
+  selected = signal&lt;string | null&gt;(null);
+  private zone = inject(NgZone);
+  private view?: GraphView;
+
+  ngAfterViewInit() {
+    // outside the zone: dragging and zooming don't trigger change detection
+    this.view = this.zone.runOutsideAngular(() => createGraph(this.host.nativeElement, this.data, {
+      direction: "LR",
+      onNodeClick: (node) =>
+        this.zone.run(() => this.selected.set(node.label ?? node.id))   // back inside to update the UI
+    }));
+  }
+
+  ngOnChanges() {
+    this.view?.updateGraph(this.data);   // keeps existing nodes in place
+  }
+
+  ngOnDestroy() {
+    this.view?.destroy();
+  }
+}</pre>
+  <p>Creating the graph with <code>runOutsideAngular</code> is optional but keeps dragging and zooming smooth; use <code>zone.run</code> (or a signal, as above) in callbacks that change what the component shows. For very large graphs, copy <code>flexgraph.worker.js</code> to your assets and pass its URL as the <code>worker</code> option.</p>
 </section>
 
-<footer>© FlexGraph Labs AS · <a href="../LICENSE.md">License (EULA)</a> · <a href="TERMS.md">Terms</a> · <a href="PRIVACY.md">Privacy</a></footer>
+<footer>© FlexGraph Labs AS<!--commercial--> · <a href="../LICENSE.md">License (EULA)</a> · <a href="TERMS.md">Terms</a> · <a href="PRIVACY.md">Privacy</a><!--/commercial--></footer>
 
 <script type="module">
   import { createGraph, setLicenseKey } from '../src/index.js';
