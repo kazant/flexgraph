@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FlexGraph — Docs & Pricing</title>
+  <title>FlexGraph — Docs</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../css/graph.css">
   <style>
@@ -31,12 +31,12 @@
   </style>
 </head>
 <body>
-<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><a href="#pricing">Pricing</a><a href="#csp">CSP</a><a href="#offline">Offline</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
+<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--pricing--><a href="#pricing">Pricing</a><!--/pricing--><a href="#csp">CSP</a><a href="#offline">Offline</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
 <header>
   <h1>Relationship graphs with clean, logical lines.</h1>
   <p class="lead">A Dagre replacement in plain HTML, CSS &amp; JavaScript: fewer crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
   <div id="live"></div>
-  <p><a class="btn" href="#pricing">$79 / month per project</a> &nbsp; <a href="../demo/">Open the full demo →</a></p>
+  <p><!--pricing--><a class="btn" href="#pricing">$79 / month per project</a> &nbsp; <!--/pricing--><a href="../demo/">Open the full demo →</a></p>
 </header>
 
 <section id="start">
@@ -103,6 +103,7 @@ await view.importState(await (await fetch("/api/diagrams/42/layout")).json());
 view.on("change", (state) => save(state));</pre>
 </section>
 
+<!--pricing-->
 <section id="pricing">
   <h2>Pricing</h2>
   <div class="grid">
@@ -115,6 +116,7 @@ view.on("change", (state) => save(state));</pre>
   <p>Your graphs keep working for 14 days and we email you on day 1, 7 and 13. After that, graphs on your site show a <b>“License inactive”</b> overlay to your users until the payment goes through. A canceled subscription keeps working until the end of the paid period.</p>
   <p class="muted">Open-source and non-commercial projects: ask us about a free license.</p>
 </section>
+<!--/pricing-->
 
 <section id="csp">
   <h2>Content Security Policy</h2>

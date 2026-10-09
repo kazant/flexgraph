@@ -2,6 +2,9 @@
 // Assemble the public website (showcase, docs, playground) into site/ for Vercel.
 // Pages import ../src/ during development; here they are switched to the minified dist/ bundle,
 // so the library source and the license server are never published.
+//
+// Prices are hidden unless SHOW_PRICING=1: <!--pricing-->…<!--/pricing--> blocks are removed and
+// <!--no-pricing:text--> is replaced by its text (with SHOW_PRICING=1 it is the other way round).
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
@@ -9,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(root, 'site');
+const showPricing = process.env.SHOW_PRICING === '1';
 
 execFileSync(process.execPath, [join(root, 'scripts/build.mjs')], { stdio: 'inherit' });
 
@@ -22,16 +26,20 @@ const rewrites = [
   ["'../src/index.js'", "'../dist/flexgraph.esm.js'"],
   ["'../src/worker.js'", "'../dist/flexgraph.worker.js'"]
 ];
-for (const dir of ['showcase', 'docs', 'demo']) {
-  for (const f of readdirSync(join(out, dir))) {
-    if (!['.js', '.html'].includes(extname(f))) continue;
-    const p = join(out, dir, f);
-    let s = readFileSync(p, 'utf8');
-    for (const [a, b] of rewrites) s = s.split(a).join(b);
-    if (s.includes('../src/')) throw new Error(`${dir}/${f} still imports from ../src/`);
-    writeFileSync(p, s);
-  }
+const pricing = (s) => showPricing
+  ? s.replace(/<!--\/?pricing-->/g, '').replace(/<!--no-pricing:[\s\S]*?-->/g, '')
+  : s.replace(/<!--pricing-->[\s\S]*?<!--\/pricing-->\n?/g, '').replace(/<!--no-pricing:([\s\S]*?)-->/g, '$1');
+const pages = ['LICENSE.md'];
+for (const dir of ['showcase', 'docs', 'demo']) for (const f of readdirSync(join(out, dir))) pages.push(join(dir, f));
+for (const rel of pages) {
+  if (!['.js', '.html', '.md'].includes(extname(rel))) continue;
+  const p = join(out, rel);
+  let s = pricing(readFileSync(p, 'utf8'));
+  for (const [a, b] of rewrites) s = s.split(a).join(b);
+  if (s.includes('../src/')) throw new Error(`${rel} still imports from ../src/`);
+  if (!showPricing && /\$\d|USD \d|pricing/i.test(s.replace(/\.price\b[^}]*}/g, ''))) throw new Error(`${rel} still shows a price (SHOW_PRICING is off)`);
+  writeFileSync(p, s);
 }
 
 writeFileSync(join(out, 'index.html'), '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./showcase/"><title>FlexGraph</title><a href="./showcase/">FlexGraph showcase</a>\n');
-console.log('site/ ready');
+console.log(`site/ ready (pricing ${showPricing ? 'shown' : 'hidden'})`);
