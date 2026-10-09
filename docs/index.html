@@ -34,7 +34,7 @@
 <nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><a href="#built">How it's built</a><a href="#maintenance">Maintenance</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a><a href="https://github.com/kazant/flexgraph">GitHub</a><a href="#support">♥ Sponsor</a></nav>
 <header>
   <h1>Relationship graphs with clean, logical lines.</h1>
-  <p class="lead">A Dagre replacement in plain HTML, CSS &amp; JavaScript: fewer crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
+  <p class="lead">Plain HTML, CSS &amp; JavaScript: few crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
   <div id="live"></div>
   <p><a href="../demo/">Open the full demo →</a></p>
 </header>
@@ -102,13 +102,12 @@ view.on("change", (state) => save(state));</pre>
 
 <section id="built">
   <h2>How it's built</h2>
-  <p>FlexGraph is written from scratch in plain JavaScript (ES modules, ES2020). It is not a fork or wrapper of Dagre, ELK or any other library.</p>
+  <p>FlexGraph is written from scratch in plain JavaScript (ES modules, ES2020). It is not a fork or wrapper of any other library.</p>
   <h3>Dependencies</h3>
   <table>
     <tr><th>Package</th><th>Used for</th><th>Shipped to your users?</th></tr>
     <tr><td><b>None</b></td><td>Runtime: the library imports nothing</td><td>—</td></tr>
     <tr><td><code>esbuild</code></td><td>Building the minified bundles (dev dependency)</td><td>No</td></tr>
-    <tr><td><code>dagre</code></td><td>Only for the quality comparison script (<code>npm run compare</code>)</td><td>No</td></tr>
   </table>
   <p>Bundle size: about 67 kB minified (about 25 kB gzipped) for the main ESM file, plus an optional 38 kB Web Worker file. ESM and UMD builds, TypeScript definitions and a default stylesheet are included.</p>
   <h3>Techniques</h3>
@@ -140,7 +139,7 @@ view.on("change", (state) => save(state));</pre>
   <h3>How to protect yourself</h3>
   <ul>
     <li><b>Pin an exact version</b> (<code>"1.0.0"</code>, not <code>"^1.0.0"</code>) and keep a copy of the package (the built files or the <code>.tgz</code>) in your own repository or internal registry, so you never depend on being able to download it again.</li>
-    <li><b>Keep your data portable.</b> Nodes, edges and groups map directly onto Dagre (nodes, edges, clusters) and ELK (which also has ports), so moving to another library is a mapping exercise. Layouts saved with <code>exportState()</code> are plain coordinates.</li>
+    <li><b>Keep your data portable.</b> Nodes, edges, ports and groups are the same concepts other graph layout libraries use, so moving to another library is a mapping exercise. Layouts saved with <code>exportState()</code> are plain coordinates.</li>
     <li><b>Wrap it.</b> Use FlexGraph through one component or module in your app, so a replacement only touches one place.</li>
   </ul>
 </section>

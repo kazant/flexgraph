@@ -5,7 +5,7 @@ All notable changes to this project are documented here. This project follows [S
 ## [1.0.1] — 2026-10-09
 
 ### Changed
-- README: removed the Dagre comparison section.
+- README and docs: removed the comparison with other libraries; the comparison script and its development dependency are gone.
 
 ## [1.0.0] — 2026-10-09
 

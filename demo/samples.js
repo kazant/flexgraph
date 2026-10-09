@@ -1,4 +1,4 @@
-// Sample graphs used by the demo, the tests and the Dagre comparison.
+// Sample graphs used by the demo and the tests.
 
 function rng(seed) {
   let s = seed >>> 0;

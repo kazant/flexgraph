@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/@kazant/flexgraph)](https://www.npmjs.com/package/@kazant/flexgraph) [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![sponsor](https://img.shields.io/badge/sponsor-%E2%99%A5-db2777)](https://github.com/sponsors/kazant)
 
-A flexible relationship graph for the browser — a replacement for Dagre with full control over layout and clean, logical edge routing. Plain HTML, CSS & JavaScript, zero runtime dependencies. Free and open source (MIT).
+A flexible relationship graph for the browser, with full control over layout and clean, logical edge routing. Plain HTML, CSS & JavaScript, zero runtime dependencies. Free and open source (MIT).
 
 **[Live examples](https://flexgraph-showcase.vercel.app) · [Docs](https://flexgraph-showcase.vercel.app/docs/) · [Playground](https://flexgraph-showcase.vercel.app/demo/)**
 
@@ -92,13 +92,12 @@ const { layout, routing } = layoutGraph(data, { direction: "LR" });   // Maps of
 
 ## How it's built
 
-Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wrapper of Dagre, ELK or other libraries.
+Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wrapper of another library.
 
 | Package | Used for | Shipped? |
 |---|---|---|
 | none | runtime: the library imports nothing | — |
 | `esbuild` | building the bundles (dev dependency) | no |
-| `dagre` | only `npm run compare` (quality comparison) | no |
 
 - **Layout:** Sugiyama-style layered layout: DFS cycle removal, longest-path ranking with compaction, barycenter/median crossing minimization (as in Graphviz *dot*) with transposition and sifting, isotonic-regression coordinate assignment.
 - **Routing:** A* on a sparse orthogonal grid with bend/crossing penalties, track nudging, line hops.
@@ -112,7 +111,6 @@ Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wra
 npm install
 npm run dev        # http://localhost:5173/ (showcase), /demo/ (playground), /docs/
 npm test           # library tests
-npm run compare    # quality vs Dagre on the sample graphs
 npm run build      # dist/ (ESM + UMD + worker, minified)
 npm run build:site # site/ (what Vercel deploys: showcase + docs + playground on dist/)
 ```
@@ -127,7 +125,7 @@ demo/             playground page + sample graphs
 showcase/         page with live examples
 docs/             docs page
 test/             library tests (node --test)
-scripts/          build, dev server, site build, Dagre comparison
+scripts/          build, dev server, site build
 ```
 
 See [PLAN.md](PLAN.md) for the design. Bug reports, ideas and pull requests are welcome.

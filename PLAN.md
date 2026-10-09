@@ -1,12 +1,12 @@
 # Plan: A Flexible Relationship Graph (HTML, CSS & JS only)
 
-A replacement for Dagre that gives full control over layout and produces clean, logical edge routing.
+A graph layout library that gives full control over layout and produces clean, logical edge routing.
 
 The library is written in plain JavaScript (with optional CSS) and published as an open-source (MIT) npm package (see section 11).
 
-## 1. Why Dagre falls short
+## 1. Problems this design solves
 
-Dagre implements the classic layered (Sugiyama) layout. Its problems are structural, not configuration issues:
+A basic implementation of the classic layered (Sugiyama) layout has structural problems, not configuration issues:
 
 | Problem | Cause |
 |---|---|
@@ -17,7 +17,6 @@ Dagre implements the classic layered (Sugiyama) layout. Its problems are structu
 | Layout jumps around | No constraints (pinning, fixed order) and no incremental layout; small changes reshuffle everything. |
 | Limited grouping | Compound/cluster support is basic. |
 
-Dagre is also no longer actively developed. (ELK.js is a ready-made pure-JS alternative with ports and orthogonal routing — useful as a reference while building our own.)
 
 ## 2. Architecture
 
@@ -107,7 +106,7 @@ Supported concepts:
 1. **Cycle removal** – detect back-edges with DFS and temporarily reverse them.
 2. **Rank assignment** – longest-path first (simple, fast); add network simplex later for more compact results. Apply `rank` and `sameRank` constraints.
 3. **Dummy nodes** – split edges spanning multiple ranks so every edge connects adjacent ranks.
-4. **Crossing minimization** (the main improvement over Dagre):
+4. **Crossing minimization** (the main improvement over a basic layered layout):
    - Barycenter / median heuristic sweeps (down and up).
    - Repeat until no improvement (with an iteration cap) instead of a fixed small number.
    - Transpose step: swap adjacent nodes in a rank whenever it reduces crossings.
@@ -181,7 +180,7 @@ view.exportState();       // positions + pins as JSON
 | Phase | Scope | Result |
 |---|---|---|
 | 1 | Data model, HTML/SVG renderer, zoom & pan, manual dragging, straight edges | Usable manual diagram editor |
-| 2 | Layered layout with improved crossing minimization | Automatic layout already better than Dagre |
+| 2 | Layered layout with improved crossing minimization | Clean automatic layout |
 | 3 | Ports + orthogonal A* routing with obstacle avoidance | Clean, readable lines |
 | 4 | Track assignment, line hops, constraints, pinning | No overlapping lines, full control |
 | 5 | Groups, incremental layout, animation, performance tuning | Polished, scalable tool |
@@ -199,7 +198,7 @@ view.exportState();       // positions + pins as JSON
 ## 10. Testing
 
 - Unit tests for each layout step (pure functions → easy to test).
-- A count of edge crossings and edge-over-node overlaps as quality metrics; compare against Dagre on the same sample graphs.
+- A count of edge crossings and edge-over-node overlaps as quality metrics on the sample graphs.
 - A set of sample graphs: small tree, dense graph, graph with cycles, grouped graph, large graph.
 
 ## 11. npm package

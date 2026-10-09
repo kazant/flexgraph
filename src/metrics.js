@@ -1,5 +1,5 @@
 // Layout quality metrics: edge crossings and edge-over-node overlaps.
-// Used by tests and the Dagre comparison script.
+// Used by the tests and the demo statistics.
 
 import { segmentHitsRect } from './routing/geometry.js';
 

@@ -50,11 +50,9 @@
     "build": "node scripts/build.mjs",
     "build:site": "node scripts/build-site.mjs",
     "test": "node --test \"test/**/*.test.js\"",
-    "compare": "node scripts/compare-dagre.mjs",
     "prepublishOnly": "npm test && npm run build"
   },
   "devDependencies": {
-    "dagre": "0.8.5",
     "esbuild": "0.24.2"
   },
   "engines": {
@@ -64,7 +62,6 @@
     "graph",
     "diagram",
     "layout",
-    "dagre",
     "erd",
     "flowchart",
     "orthogonal-routing",
