@@ -5,7 +5,6 @@ import { NORMALS, expand, strictlyInside, boundaryPoint, simplify, center } from
 import { assignPorts } from './ports.js';
 import { nudgeTracks } from './tracks.js';
 import { computeHops } from './hops.js';
-import { _lg } from '../license/gate.js';
 
 const HW = 1; // heuristic weight (1 = optimal A*)
 const DX = [1, -1, 0, 0];
@@ -24,8 +23,7 @@ const dirIndexOf = (v) => (v.x > 0 ? 0 : v.x < 0 ? 1 : v.y > 0 ? 2 : 3);
 export function routeEdges(model, layout, state = {}) {
   const o = model.options;
   const rects = layout.nodes;
-  const lic = _lg(2);
-  const mode = lic ? o.edgeRouting : 'straight';
+  const mode = o.edgeRouting;
   const { ends, ports } = assignPorts(model, rects);
   const paths = new Map();
   const raw = new Map();

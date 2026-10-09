@@ -1,6 +1,10 @@
 # FlexGraph
 
-A flexible relationship graph for the browser — a replacement for Dagre with full control over layout and clean, logical edge routing. Plain HTML, CSS & JavaScript, zero runtime dependencies.
+[![npm](https://img.shields.io/npm/v/@kazant/flexgraph)](https://www.npmjs.com/package/@kazant/flexgraph) [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![sponsor](https://img.shields.io/badge/sponsor-%E2%99%A5-db2777)](https://github.com/sponsors/kazant)
+
+A flexible relationship graph for the browser — a replacement for Dagre with full control over layout and clean, logical edge routing. Plain HTML, CSS & JavaScript, zero runtime dependencies. Free and open source (MIT).
+
+**[Live examples](https://flexgraph-showcase.vercel.app) · [Docs](https://flexgraph-showcase.vercel.app/docs/) · [Playground](https://flexgraph-showcase.vercel.app/demo/)**
 
 - **Layered layout** with stronger crossing minimization (barycenter + median sweeps until no improvement, transpose, sifting, several starting orders, port-aware).
 - **Ports** – named connection points on node sides; auto ports are spread and sorted so edges don't cross at the node.
@@ -11,28 +15,24 @@ A flexible relationship graph for the browser — a replacement for Dagre with f
 - **Interaction** – drag (re-routes only affected edges), pin, zoom/pan/pinch, fit, hover highlighting (whole upstream/downstream chain, or direct neighbors with `hoverHighlight: "neighbors"`; a clicked node stays highlighted), selection, save/load state, animated transitions, incremental updates.
 - Layout engine is DOM-free (Node, SSR, Web Worker).
 
-See [PLAN.md](PLAN.md) for the full design.
-
-## Quick start (development)
+## Install
 
 ```bash
-npm install
-npm run dev        # http://localhost:5173/ (showcase), /demo/ (playground), /docs/
-npm run build:site # site/ (what Vercel deploys: showcase + docs + playground on dist/)
-                   # prices, license keys, portal, offline and legal texts are hidden unless SHOW_COMMERCIAL=1
-npm test           # library tests
-npm run test:server
-npm run compare    # quality vs Dagre on the sample graphs
-npm run build      # dist/ (ESM + UMD + worker, minified)
+npm install @kazant/flexgraph
+```
+
+Or without a bundler, from a CDN:
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@kazant/flexgraph/css/graph.css">
+<script src="https://unpkg.com/@kazant/flexgraph"></script>   <!-- window.FlexGraph.createGraph(...) -->
 ```
 
 ## Usage
 
 ```js
-import { createGraph, setLicenseKey } from "@flexgraph-labs/flexgraph";
-import "@flexgraph-labs/flexgraph/style.css";
-
-setLicenseKey("FG-PRJ-7K2M-9QXA-3HTR-PL0D");   // not needed on localhost
+import { createGraph } from "@kazant/flexgraph";
+import "@kazant/flexgraph/style.css";
 
 const view = createGraph(document.getElementById("graph"), {
   nodes: [
@@ -69,7 +69,7 @@ Edge `type` sets the CSS class `fg-edge--<type>` and default markers (`has-many`
 
 ### Events
 
-`view.on(name, cb)` with `layout`, `select`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `license`, `animationend`.
+`view.on(name, cb)` with `layout`, `select`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `animationend`.
 
 ### Theming
 
@@ -80,13 +80,13 @@ All colours are CSS custom properties on `.fg-container` (`--fg-node-bg`, `--fg-
 Run layout + routing in a Web Worker:
 
 ```js
-createGraph(el, data, { worker: new URL("@flexgraph-labs/flexgraph/worker", import.meta.url) });
+createGraph(el, data, { worker: new URL("@kazant/flexgraph/worker", import.meta.url) });
 ```
 
 ### Headless
 
 ```js
-import { layoutGraph } from "@flexgraph-labs/flexgraph";
+import { layoutGraph } from "@kazant/flexgraph";
 const { layout, routing } = layoutGraph(data, { direction: "LR" });   // Maps of rects and point lists
 ```
 
@@ -99,13 +99,12 @@ Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wra
 | none | runtime: the library imports nothing | — |
 | `esbuild` | building the bundles (dev dependency) | no |
 | `dagre` | only `npm run compare` (quality comparison) | no |
-| `wrangler` | deploying the license server (`server/`, dev dependency) | no |
 
 - **Layout:** Sugiyama-style layered layout: DFS cycle removal, longest-path ranking with compaction, barycenter/median crossing minimization (as in Graphviz *dot*) with transposition and sifting, isotonic-regression coordinate assignment.
 - **Routing:** A* on a sparse orthogonal grid with bend/crossing penalties, track nudging, line hops.
-- **Browser features:** SVG, CSS custom properties, Pointer Events, `requestAnimationFrame`, optional Web Worker. License checks use `fetch`, Web Crypto (ECDSA P-256, pure-JS fallback) and `localStorage`.
-- **Size:** about 79 kB minified / 30 kB gzipped (ESM), worker 38 kB.
-- **Tooling:** Node.js 20+, tests with `node --test`; the license server runs on Cloudflare Workers + D1 + R2.
+- **Browser features:** SVG, CSS custom properties, Pointer Events, `requestAnimationFrame`, optional Web Worker. No network requests, no `eval`.
+- **Size:** about 67 kB minified / 25 kB gzipped (ESM), worker 38 kB.
+- **Tooling:** Node.js 20+, tests with `node --test`.
 
 ## Quality vs Dagre
 
@@ -120,58 +119,36 @@ Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wra
 | Grouped | 12 / 14 | 0 / 1 | 0 / 0 |
 | Large | 150 / 208 | 461 / 561 | 0 / 131 |
 
-## Licensing
+## Development
 
-Commercial: **$79 per month per project** (see [LICENSE.md](LICENSE.md)). On `localhost` the library runs free in Development mode. On other domains it validates the key online (`POST https://license.flexgraph.example/v1/validate`), verifies the server's ECDSA-signed token with the public key in the bundle, caches it for 7 days, and keeps working through server outages (cached token + 14 days; first-time visitors run "unverified"). Unpaid/canceled projects show a "License inactive" overlay.
-
-**Customer requirements**
-
-- Allow `https://license.flexgraph.example` in your Content Security Policy: `connect-src 'self' https://license.flexgraph.example`.
-- Register your production domain (+ up to 3 staging domains) in the customer portal.
-- Intranet / offline projects: use the offline add-on (`FG-OFF-…` key bound to the domain, renewed monthly by email).
-
-Install from the private registry (`.npmrc`):
-
+```bash
+npm install
+npm run dev        # http://localhost:5173/ (showcase), /demo/ (playground), /docs/
+npm test           # library tests
+npm run compare    # quality vs Dagre on the sample graphs
+npm run build      # dist/ (ESM + UMD + worker, minified)
+npm run build:site # site/ (what Vercel deploys: showcase + docs + playground on dist/)
 ```
-@flexgraph-labs:registry=https://npm.flexgraph.example/
-//npm.flexgraph.example/:_authToken=${FLEXGRAPH_NPM_TOKEN}
-```
-
-## Repository layout
 
 ```
 src/              library source (ES modules)
   layout/         ranking, ordering (crossing minimization), coords, compound groups
   routing/        ports, A* router, track nudging, hops, geometry
-  license/        verify (tokens, cache, grace), watermark, gate, public key
 css/graph.css     default styles
 types/index.d.ts  TypeScript definitions
 demo/             playground page + sample graphs
-showcase/         showcase page with live examples (deployed to Vercel)
-docs/             docs site, pricing, privacy policy, terms
+showcase/         page with live examples
+docs/             docs page
 test/             library tests (node --test)
-server/           license server: Cloudflare Worker + D1 + R2 (validation, webhooks, portal, registry, cron)
-scripts/          build, dev server, key generation, Dagre comparison, private publish
+scripts/          build, dev server, site build, Dagre comparison
 ```
 
-## Phase 6 checklist
+See [PLAN.md](PLAN.md) for the design. Bug reports, ideas and pull requests are welcome.
 
-| Item | Status |
-|---|---|
-| Bundler setup (ESM + UMD, minified) and package.json | Done — `npm run build` (UMD ships as `.cjs` because the package is `"type": "module"`) |
-| Private registry with per-customer tokens and automatic revocation | Done — `server/src/registry.js` (R2-backed, npm compatible) |
-| Public trial build (watermark, localhost only) | Done — `npm run build:trial` → `dist-trial/` |
-| ECDSA key pair; private key in a secrets manager | Script done (`npm run keys`). **You:** generate the production pair and `wrangler secret put LICENSE_PRIVATE_JWK` |
-| License server: `/v1/validate`, token signing, rate limiting | Done |
-| Database: customers, projects, domains, registry tokens | Done — `server/schema.sql` |
-| Webhook handling for all subscription events | Done — Lemon Squeezy + Stripe |
-| Library: verify.js and watermark.js | Done |
-| Tests: active, past due, canceled, wrong domain, forged token, server offline, expired cache, localhost | Done — `test/license.test.js`, `server/test/` |
-| Monitoring: unregistered domains, key sharing alerts, uptime checks | Alerts done (daily cron). **You:** point an uptime monitor at `/health` |
-| Customer portal | Done — `server/public/portal/` |
-| Reminder emails during the grace period | Done — day 1, 7, 13 (Resend) |
-| EULA, terms of service, privacy policy | Drafts in `LICENSE.md`, `docs/TERMS.md`, `docs/PRIVACY.md`. **You:** have a lawyer review |
-| Docs site with live demos, pricing page, CSP and offline instructions | Done — `docs/index.html` |
-| Publish to the private registry | Script done (`npm run publish:private`). **You:** deploy the server and publish |
+## Support
 
-Replace the dummy values (`@flexgraph-labs`, `*.flexgraph.example`, FlexGraph Labs AS) with your real names before going live.
+FlexGraph is free and built by one person. If it saves you or your company time, [a donation through GitHub Sponsors](https://github.com/sponsors/kazant) is much appreciated and helps keep it maintained.
+
+## License
+
+[MIT](LICENSE) © 2026 Alexander Pettersen (kazant)

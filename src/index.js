@@ -1,19 +1,16 @@
-// Public API: createGraph(), setLicenseKey() and the pure layout/routing engine.
+// Public API: createGraph() and the pure layout/routing engine.
 
 import { normalizeGraph, resolveOptions, DEFAULT_OPTIONS, GraphValidationError } from './model.js';
 import { computeLayout, computeGroupBoxes, boundsOf, resolveOverlaps } from './layout/index.js';
 import { routeEdges, applySavedRoutes } from './routing/router.js';
 import { Renderer, interpolatePaths, edgePath } from './render.js';
 import { attachInteraction } from './interaction.js';
-import { setLicenseKey, getLicenseState, onLicenseChange, ensureLicense } from './license/verify.js';
-import { applyLicenseUI } from './license/watermark.js';
-import { _lg } from './license/gate.js';
 import { segmentHitsRect } from './routing/geometry.js';
 import { highlightSet } from './highlight.js';
 import { VERSION } from './version.js';
 import * as metrics from './metrics.js';
 
-export { setLicenseKey, getLicenseState, onLicenseChange, normalizeGraph, computeLayout, routeEdges, edgePath, metrics, DEFAULT_OPTIONS, GraphValidationError, VERSION };
+export { normalizeGraph, computeLayout, routeEdges, edgePath, metrics, DEFAULT_OPTIONS, GraphValidationError, VERSION };
 
 /**
  * Lay out and route a graph without any DOM (Node, SSR, Web Worker, tests).
@@ -60,9 +57,6 @@ export class GraphView {
     this._hl = [];
     if (this.options.controls) this._controls();
     this._detach = attachInteraction(this);
-    ensureLicense();
-    this._licUnsub = onLicenseChange((s) => this._applyLicense(s));
-    this._applyLicense(getLicenseState());
     this.ready = this._build({ mode: 'relayout', animate: false }).then(() => { this.fit(); return this; });
   }
 
@@ -218,8 +212,6 @@ export class GraphView {
   destroy() {
     cancelAnimationFrame(this._anim);
     this._detach();
-    this._licUnsub();
-    if (this._licCleanup) this._licCleanup();
     this.renderer.destroy();
     this._listeners.clear();
   }
@@ -304,7 +296,7 @@ export class GraphView {
     const seq = ++this._wseq;
     return new Promise((resolve, reject) => {
       this._wpending.set(seq, { resolve, reject });
-      this._worker.postMessage({ seq, data, options: opts, hints, licensed: _lg(5) });
+      this._worker.postMessage({ seq, data, options: opts, hints });
     }).then((res) => ({ nodes: res.nodes, edges: res.edges, crossings: res.crossings, routing: res.routing }));
   }
 
@@ -394,7 +386,6 @@ export class GraphView {
   }
 
   _click(tgt, ev) {
-    if (!_lg(6)) return;
     if (tgt.kind === 'node') {
       this.select({ kind: 'node', id: tgt.id });
       const n = this.model.nodeById.get(tgt.id);
@@ -435,14 +426,6 @@ export class GraphView {
     for (const id of hl.edges) { mark(r.edgeEls.get(id)); mark(r.labelEls.get(id)); }
   }
 
-  _applyLicense(state) {
-    if (this._licCleanup) this._licCleanup();
-    this._licCleanup = applyLicenseUI(this.renderer.viewport, state);
-    this.renderer.viewport.classList.toggle('fg-locked', state.mode === 'locked');
-    if (this.model && this._licMode !== undefined && (this._licMode === 'locked') !== (state.mode === 'locked')) this._reroute();
-    this._licMode = state.mode;
-    this._emit('license', state);
-  }
 
   _controls() {
     const c = document.createElement('div');

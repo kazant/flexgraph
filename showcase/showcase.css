@@ -16,6 +16,8 @@ a { color: var(--accent); text-decoration: none; }
 .brand small { color: var(--muted); font-weight: 400; }
 .logo { width: 20px; height: 20px; border-radius: 5px; background: var(--accent); }
 .spacer { flex: 1; }
+.top .sponsor { color: #db2777; }
+.note code { font-size: 12px; }
 
 .hero, #examples, footer { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
 .hero { padding-top: 56px; padding-bottom: 16px; }

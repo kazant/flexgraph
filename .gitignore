@@ -1,10 +1,7 @@
 node_modules/
 dist/
-dist-trial/
 scratch/
 *.tgz
-server/.dev.vars
-server/.wrangler/
 .DS_Store
 site/
 .vercel/

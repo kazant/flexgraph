@@ -2,7 +2,7 @@
 
 A replacement for Dagre that gives full control over layout and produces clean, logical edge routing.
 
-The library is written in plain JavaScript (with optional CSS) and distributed as a commercial npm package that requires a license key. The price is **$79 per month per project**, and the library verifies that each project has an active, paid subscription (see sections 11 and 12).
+The library is written in plain JavaScript (with optional CSS) and published as an open-source (MIT) npm package (see section 11).
 
 ## 1. Why Dagre falls short
 
@@ -40,9 +40,9 @@ Three strictly separated layers:
 
 ```
 /package.json
-/LICENSE.md               – commercial license (EULA)
+/LICENSE                  – MIT license
 /README.md
-/src/index.js             – public API: createGraph(), setLicenseKey()
+/src/index.js             – public API: createGraph(), layoutGraph()
 /src/model.js             – graph data structure, validation
 /src/layout/ranking.js    – cycle removal + rank assignment
 /src/layout/ordering.js   – crossing minimization
@@ -52,8 +52,6 @@ Three strictly separated layers:
 /src/routing/tracks.js    – parallel segment separation
 /src/render.js            – DOM + SVG rendering
 /src/interaction.js       – drag, zoom, pan, hover, selection
-/src/license/verify.js    – license key verification
-/src/license/watermark.js – watermark for unlicensed use
 /css/graph.css            – default styles (shipped in the package)
 /dist/                    – built ESM + UMD bundles (minified)
 /demo/index.html          – local demo and test page
@@ -187,9 +185,8 @@ view.exportState();       // positions + pins as JSON
 | 3 | Ports + orthogonal A* routing with obstacle avoidance | Clean, readable lines |
 | 4 | Track assignment, line hops, constraints, pinning | No overlapping lines, full control |
 | 5 | Groups, incremental layout, animation, performance tuning | Polished, scalable tool |
-| 6 | npm packaging, private registry, license server with online validation, payment integration, customer portal, docs site | Sellable product with payment enforcement |
+| 6 | npm packaging, docs site with live examples | Public open-source release |
 
-The licensing code (phase 6) can be prototyped early, but it should only be finalized once the API is stable.
 
 ## 9. Performance notes
 
@@ -211,9 +208,9 @@ The licensing code (phase 6) can be prototyped early, but it should only be fina
 
 ```json
 {
-  "name": "@flexgraph-labs/flexgraph",
+  "name": "@kazant/flexgraph",
   "version": "1.0.0",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/flexgraph.umd.js",
   "module": "./dist/flexgraph.esm.js",
@@ -224,7 +221,7 @@ The licensing code (phase 6) can be prototyped early, but it should only be fina
     },
     "./style.css": "./css/graph.css"
   },
-  "files": ["dist", "css", "LICENSE.md", "README.md"],
+  "files": ["dist", "css", "types", "LICENSE", "README.md", "CHANGELOG.md"],
   "sideEffects": ["*.css"]
 }
 ```
@@ -235,178 +232,4 @@ The licensing code (phase 6) can be prototyped early, but it should only be fina
 - Ship TypeScript type definitions (`.d.ts`).
 - Follow semantic versioning and publish a changelog.
 
-### Distribution: private registry (only paying customers can install)
-
-The package is not published to the public npm registry. It is published to a private registry, so only customers with an active subscription can download it.
-
-- Options: GitHub Packages, a private npm organization, a hosted registry (e.g. Cloudsmith, Gemfury), or self-hosted Verdaccio.
-- Each customer gets a personal registry access token from the customer portal.
-- When a subscription ends, the token is revoked automatically (via webhook). The customer can no longer install or update the package.
-
-Customer setup (`.npmrc` in their project):
-
-```
-@flexgraph-labs:registry=https://npm.flexgraph.example/
-//npm.flexgraph.example/:_authToken=${FLEXGRAPH_NPM_TOKEN}
-```
-
-Also offer a public trial package or an online playground so people can evaluate the library before paying. The trial build always shows a watermark and only runs on localhost.
-
-### Usage for customers
-
-```js
-import { createGraph, setLicenseKey } from "@flexgraph-labs/flexgraph";
-import "@flexgraph-labs/flexgraph/style.css";
-
-setLicenseKey("FG-PRJ-7K2M-9QXA-...");   // project license key
-const view = createGraph(document.getElementById("graph"), data, options);
-```
-
-## 12. Licensing & payment enforcement ($79/month per project)
-
-### What counts as a "project"
-
-One license = one project = one application with:
-
-- 1 production domain (e.g. `app.acme.no`), plus its subdomains if the customer chooses a wildcard
-- Up to 3 non-production domains (staging, test, preview)
-- `localhost` / `127.0.0.1` always allowed for development, at no cost
-
-Customers register their domains in the customer portal. Domains can be changed a limited number of times per month (e.g. 3) to prevent one key from being rotated between many projects. A customer with 3 projects buys 3 licenses ($150/month).
-
-### Reality check
-
-Code running in the browser can always be modified by a determined person, so no system is 100% unbreakable. The goal is to make it impossible to use the library legitimately without paying, and to make bypassing it clearly deliberate (and a breach of the EULA). Enforcement therefore uses several layers together:
-
-| Layer | What it ensures |
-|---|---|
-| 1. Private registry | Only paying customers can download and update the package |
-| 2. Online license validation | The library only runs normally on registered domains with an active, paid subscription |
-| 3. Server-side monitoring | Key sharing and use on unregistered domains are detected |
-| 4. Legal license (EULA) | Bypassing the check is a contract breach, with an audit clause |
-
-### Layer 2: Online license validation
-
-Flow on page load:
-
-```
-Browser (library)                          License server
-      │  POST /v1/validate                       │
-      │  { key, domain, libVersion }  ─────────► │  1. Key exists?
-      │                                          │  2. Subscription active & paid?
-      │                                          │  3. Domain registered for this project?
-      │  ◄───────── signed license token ──────  │  4. Return signed token
-      │  { status, project, domain, expires }    │
-      │                                          │
-  verify signature with embedded public key
-  cache token in localStorage
-```
-
-Signed token:
-
-- The server signs the token with a private key (ECDSA P-256) that never leaves the server.
-- The library verifies it with the public key embedded in the bundle, using the Web Crypto API (`crypto.subtle.verify`). This means a fake server or a hand-edited response is rejected.
-- The token contains: `projectId`, `domain`, `status` (active / past_due / canceled), `paidUntil`, `expires` (issued for 7 days), and `libVersion`.
-- The library checks that `domain` matches `location.hostname` exactly, so a token copied to another site doesn't work.
-
-Caching and outages:
-
-- A valid cached token is used without contacting the server (fast page loads, few requests).
-- The token is refreshed in the background when it's less than 2 days from expiry.
-- If the license server can't be reached, the cached token keeps working until it expires, plus a 14-day grace period. A customer's site never breaks because of a server outage.
-- The license server should be on a reliable platform (e.g. Cloudflare Workers + a managed database) with uptime monitoring.
-
-### Behavior by subscription status
-
-| Status | When | Library behavior |
-|---|---|---|
-| Active | Payment received | Full functionality, no watermark |
-| Development | localhost / 127.0.0.1 | Full functionality, no key needed, small "Development" badge |
-| Past due | Payment failed | Full functionality for a 14-day grace period; console warning; email to customer from the payment provider |
-| Unpaid / canceled | Grace period over or subscription canceled | Locked: the graph renders with a large "License inactive" overlay and interaction is disabled |
-| No key / invalid key / unregistered domain | | Same locked mode, with a console message explaining exactly what's wrong and linking to the portal |
-
-The locked mode is deliberately visible to the customer's end users, which is a strong incentive to pay. Customers should be told this clearly on the pricing page and in the EULA, and receive email reminders before the lock happens (e.g. at day 1, 7 and 13 of the grace period).
-
-### Layer 3: Server-side monitoring
-
-The license server logs every validation request (key, domain, timestamp, library version). Store only what is necessary, and no end-user personal data — don't log end-user IP addresses longer than needed for rate limiting (GDPR).
-
-- **Unregistered domains:** requests from a domain not registered on the project are rejected and logged. Repeated attempts trigger an alert.
-- **Key sharing:** a key that is validated from many different domains is flagged for review.
-- **Usage dashboard:** shows each customer which domains are using their keys.
-- **Rate limiting** on the validate endpoint, to prevent abuse.
-
-### Light tamper resistance
-
-- Ship only minified bundles.
-- Spread the license check across several places in the code (rendering, layout and routing all check the verified status), rather than one `if` statement that is easy to remove.
-- Don't go further than this. Heavy obfuscation hurts performance and debugging for paying customers, and the legal license plus the private registry are the real protection.
-
-### Customer requirements (document clearly)
-
-- The customer's site must be able to reach `https://license.flexgraph.example`. If they use a Content Security Policy, they must add it to `connect-src`.
-- **Offline / intranet projects** (no internet access): offer an offline license add-on. It's a signed key bound to the domain, with an expiry date of the paid period + 14 days. A new key is issued automatically each month and must be updated in the project. Price it higher (e.g. $75/month per project) because it's harder to enforce.
-
-### Payments and automation
-
-- The customer subscribes on your website: $79/month, quantity = number of projects.
-- The payment provider sends webhooks for: subscription created, payment succeeded, payment failed, subscription canceled.
-- The license server updates the database:
-  - `customers` (id, email, company)
-  - `projects` (id, customer_id, license_key, status, paid_until)
-  - `domains` (project_id, hostname, type: production/staging)
-  - `registry_tokens` (customer_id, token_hash, revoked)
-- On payment success: `status = active`, `paid_until` is extended.
-- On payment failure: `status = past_due`, grace period starts.
-- On cancellation or grace period end: `status = canceled`, registry token revoked.
-- Within at most 7 days (the token lifetime), the library picks up the new status everywhere.
-
-Payment provider options:
-
-| Provider | Notes |
-|---|---|
-| Lemon Squeezy or Paddle | Merchant of record: they handle VAT/MVA and sales tax worldwide, which simplifies selling from Norway. Support subscriptions with quantities and webhooks. |
-| Stripe | More control and lower fees, but you are responsible for taxes (Stripe Tax can help). |
-
-Verify current fees, features, and tax handling with each provider before choosing.
-
-### Customer portal
-
-- Buy, add or remove project licenses
-- View and copy license keys and the npm registry token
-- Register and manage domains per project
-- See validation activity per domain
-- View invoices and manage payment methods (link to the payment provider's billing portal)
-- Cancel subscription
-
-### Pricing notes
-
-- $79/month per project (the core plan).
-- Optional annual plan, e.g. $790/year per project (two months free), for better cash flow and less churn.
-- Optional offline license add-on (see above).
-- Optional free licenses for open-source or non-commercial projects to grow adoption.
-
-### Legal
-
-- Write a clear `LICENSE.md` / EULA that defines a "project", the domain rules, that the subscription must be active for use in production, that removing or bypassing the license check is prohibited, the right to audit, the grace period and locked-mode behavior, and liability limits.
-- Include the license validation in the privacy policy and describe what data the license server receives (key, domain, library version).
-- Use a lawyer or a reviewed template. Also check the requirements for selling to businesses and consumers in Norway/EU, including VAT/MVA (much of this is handled by a merchant-of-record provider).
-
-### Phase 6 checklist
-
-- [ ] Bundler setup (ESM + UMD, minified) and package.json
-- [ ] Private registry with per-customer tokens and automatic revocation
-- [ ] Public trial build (watermark, localhost only)
-- [ ] Generate ECDSA key pair; store the private key in a secrets manager (never in the repo)
-- [ ] License server: `/v1/validate` endpoint, token signing, rate limiting
-- [ ] Database: customers, projects, domains, registry tokens
-- [ ] Webhook handling for all subscription events
-- [ ] Library: `verify.js` (token check, caching, grace period) and `watermark.js` (overlay + locked mode)
-- [ ] Tests: active, past due, canceled, wrong domain, forged token, server offline, expired cache, localhost
-- [ ] Monitoring: unregistered domains, key sharing alerts, uptime checks
-- [ ] Customer portal
-- [ ] Reminder emails during the grace period
-- [ ] EULA, terms of service, privacy policy
-- [ ] Docs site with live demos, pricing page, CSP and offline instructions
-- [ ] Publish to the private registry
+Published to the public npm registry as `@kazant/flexgraph` under the MIT license (see `LICENSE`). An earlier commercial design (license keys, license server, private registry) is kept in the `commercial-archive` branch.

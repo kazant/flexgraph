@@ -1,9 +1,5 @@
-import { createGraph, setLicenseKey, getLicenseState, onLicenseChange, metrics, VERSION } from '../src/index.js';
+import { createGraph, metrics, VERSION } from '../src/index.js';
 import { EXAMPLES } from './examples.js';
-
-// Dummy project key for the showcase. The dummy license server is not deployed yet,
-// so on a real domain the library runs in "unverified" mode (it never locks on network errors).
-setLicenseKey('FG-PRJ-DEMO-SHOW-CASE-0001');
 
 const WORKER_URL = new URL('../src/worker.js', import.meta.url);
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -11,9 +7,6 @@ const names = (list) => list.length ? list.map((x) => x.label ?? x.id).join(", "
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 $('#version').textContent = 'v' + VERSION;
-const showLicense = (s) => { if ($('#license')) $('#license').textContent = s.mode + (s.reason ? ` (${s.reason})` : ''); };
-showLicense(getLicenseState());
-onLicenseChange(showLicense);
 
 const nav = $('#toc');
 const list = $('#examples');

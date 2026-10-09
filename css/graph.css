@@ -196,7 +196,6 @@
   box-shadow: var(--fg-node-shadow);
 }
 .fg-controls button:hover { border-color: var(--fg-accent); color: var(--fg-accent); }
-.fg-locked .fg-controls { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .fg-node, .fg-edge__line { transition: none; }

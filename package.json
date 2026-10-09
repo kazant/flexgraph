@@ -1,12 +1,27 @@
 {
-  "name": "@flexgraph-labs/flexgraph",
+  "name": "@kazant/flexgraph",
   "version": "1.0.0",
   "description": "Flexible relationship graph for the browser: layered layout with strong crossing minimization, ports, orthogonal edge routing with obstacle avoidance, groups and constraints. Plain HTML, CSS & JS.",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "MIT",
+  "author": "Alexander Pettersen (https://github.com/kazant)",
+  "homepage": "https://flexgraph-showcase.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kazant/flexgraph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kazant/flexgraph/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/kazant"
+  },
   "type": "module",
   "main": "./dist/flexgraph.umd.cjs",
   "module": "./dist/flexgraph.esm.js",
   "types": "./types/index.d.ts",
+  "unpkg": "./dist/flexgraph.umd.js",
+  "jsdelivr": "./dist/flexgraph.umd.js",
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
@@ -16,22 +31,27 @@
     "./worker": "./dist/flexgraph.worker.js",
     "./style.css": "./css/graph.css"
   },
-  "files": ["dist", "css", "types", "LICENSE.md", "README.md", "CHANGELOG.md"],
-  "sideEffects": ["*.css"],
+  "files": [
+    "dist",
+    "css",
+    "types",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
   "publishConfig": {
-    "registry": "https://npm.flexgraph.example/"
+    "access": "public"
   },
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
-    "build:trial": "node scripts/build.mjs --trial",
     "build:site": "node scripts/build-site.mjs",
     "test": "node --test \"test/**/*.test.js\"",
-    "test:server": "node --test \"server/test/**/*.test.js\"",
     "compare": "node scripts/compare-dagre.mjs",
-    "keys": "node scripts/generate-keys.mjs",
-    "prepublishOnly": "npm test && npm run build",
-    "publish:private": "node scripts/publish-private.mjs"
+    "prepublishOnly": "npm test && npm run build"
   },
   "devDependencies": {
     "dagre": "0.8.5",
@@ -40,5 +60,14 @@
   "engines": {
     "node": ">=20"
   },
-  "keywords": ["graph", "diagram", "layout", "dagre", "erd", "flowchart", "orthogonal-routing", "sugiyama"]
+  "keywords": [
+    "graph",
+    "diagram",
+    "layout",
+    "dagre",
+    "erd",
+    "flowchart",
+    "orthogonal-routing",
+    "sugiyama"
+  ]
 }

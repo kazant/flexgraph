@@ -1,4 +1,4 @@
-// Type definitions for @flexgraph-labs/flexgraph
+// Type definitions for @kazant/flexgraph
 
 export type Direction = 'TB' | 'LR' | 'BT' | 'RL';
 export type EdgeRouting = 'orthogonal' | 'straight' | 'curved';
@@ -144,7 +144,6 @@ export interface GraphEvents {
   pin: { id: string; pinned: boolean };
   change: ViewState;
   viewport: { x: number; y: number; k: number };
-  license: LicenseState;
   animationend: void;
 }
 
@@ -183,21 +182,8 @@ export interface GraphView {
   destroy(): void;
 }
 
-export type LicenseMode = 'pending' | 'active' | 'development' | 'trial' | 'past_due' | 'unverified' | 'locked';
-export interface LicenseState {
-  mode: LicenseMode;
-  reason?: string;
-  message?: string;
-  portal?: string;
-  projectId?: string;
-  daysLeft?: number;
-  offlineGrace?: boolean;
-}
 
 export function createGraph(container: HTMLElement | string, data: GraphData, options?: Partial<GraphOptions>): GraphView;
-export function setLicenseKey(key: string | null, opts?: { endpoint?: string }): Promise<LicenseState>;
-export function getLicenseState(): LicenseState;
-export function onLicenseChange(cb: (state: LicenseState) => void): () => void;
 
 export interface RoutedPath { points: Point[]; kind: EdgeRouting; sourceSide: Side; targetSide: Side; hops: { seg: number; x: number; y: number }[]; }
 export interface LayoutResult {

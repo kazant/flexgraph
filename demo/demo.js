@@ -1,10 +1,6 @@
-import { createGraph, setLicenseKey, getLicenseState, metrics } from '../src/index.js';
+import { createGraph, metrics } from '../src/index.js';
 import { SAMPLES } from './samples.js';
 
-// On localhost no key is needed (Development mode). In production:
-// setLicenseKey('FG-PRJ-XXXX-XXXX-XXXX-XXXX');
-// Dummy showcase key until the license server is live (localhost ignores it).
-setLicenseKey(new URLSearchParams(location.search).get('key') || 'FG-PRJ-DEMO-SHOW-CASE-0001');
 
 const $ = (id) => document.getElementById(id);
 const sampleSel = $('sample');
@@ -40,9 +36,6 @@ function load(name) {
   });
   view.on('layout', () => stats());
   view.on('dragend', () => stats());
-  const showLic = (s) => { if ($('s-lic')) $('s-lic').textContent = s.mode + (s.reason ? ` (${s.reason})` : ''); };
-  view.on('license', showLic);
-  showLic(getLicenseState());
   view.ready.then(() => { $('s-time').textContent = Math.round(performance.now() - t0); stats(); });
 }
 

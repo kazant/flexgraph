@@ -4,12 +4,10 @@
 import { normalizeGraph } from './model.js';
 import { computeLayout } from './layout/index.js';
 import { routeEdges } from './routing/router.js';
-import { _sg } from './license/gate.js';
 
 self.onmessage = (ev) => {
-  const { seq, data, options, hints, licensed } = ev.data;
+  const { seq, data, options, hints } = ev.data;
   try {
-    _sg(licensed !== false);
     const model = normalizeGraph(data, options);
     const layout = computeLayout(model, { hints: hints || null });
     const routing = routeEdges(model, layout);

@@ -1,5 +1,5 @@
 // Showcase examples. Each example returns { data, options } for createGraph(),
-// plus a short code snippet shown next to the live graph. All data is dummy data.
+// plus a short code snippet shown next to the live graph. All data is made up.
 
 import { erd, grouped, large } from '../demo/samples.js';
 
@@ -267,7 +267,7 @@ view.on("change", (state) => saveToServer(state));`
     text: 'Layout and routing for 150 nodes and 200+ edges run in a Web Worker, so the page stays responsive. Zero edges cross a node.',
     make: (workerUrl) => ({ data: large(), options: { worker: workerUrl, controls: true } }),
     code: `createGraph(el, data, {
-  worker: new URL("@flexgraph-labs/flexgraph/worker", import.meta.url),
+  worker: new URL("@kazant/flexgraph/worker", import.meta.url),
   controls: true
 });`
   }

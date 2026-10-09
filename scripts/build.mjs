@@ -1,24 +1,20 @@
 #!/usr/bin/env node
-// Build minified ESM + UMD bundles (and the worker) with esbuild.
-//   node scripts/build.mjs           -> dist/          (licensed build)
-//   node scripts/build.mjs --trial   -> dist-trial/    (watermark, localhost only)
+// Build minified ESM + UMD bundles (and the worker) with esbuild: node scripts/build.mjs -> dist/
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const trial = process.argv.includes('--trial');
-const out = join(root, trial ? 'dist-trial' : 'dist');
+const out = join(root, 'dist');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-const banner = `/*! FlexGraph v${pkg.version}${trial ? ' (trial)' : ''} | Commercial license, see LICENSE.md | (c) FlexGraph Labs AS */`;
+const banner = `/*! FlexGraph v${pkg.version} | MIT License | (c) 2026 Alexander Pettersen (kazant) | https://github.com/kazant/flexgraph */`;
 const common = {
   bundle: true,
   minify: true,
   sourcemap: false,
   target: ['es2020'],
   legalComments: 'none',
-  define: { __FG_TRIAL__: trial ? 'true' : 'false' },
   banner: { js: banner }
 };
 
@@ -42,8 +38,9 @@ return module.exports;
 });
 `;
 writeFileSync(join(out, 'flexgraph.umd.cjs'), umd);
+writeFileSync(join(out, 'flexgraph.umd.js'), umd); // same file for <script> tags and CDNs (served as JavaScript)
 
-for (const f of ['flexgraph.esm.js', 'flexgraph.umd.cjs', 'flexgraph.worker.js']) {
+for (const f of ['flexgraph.esm.js', 'flexgraph.umd.cjs', 'flexgraph.umd.js', 'flexgraph.worker.js']) {
   const size = readFileSync(join(out, f)).length;
-  console.log(`${trial ? 'dist-trial' : 'dist'}/${f}  ${(size / 1024).toFixed(1)} kB`);
+  console.log(`dist/${f}  ${(size / 1024).toFixed(1)} kB`);
 }

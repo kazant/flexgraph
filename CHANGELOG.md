@@ -2,26 +2,9 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.0] — 2026-10-09
 
-### Added
-- Clicking a node or edge keeps its highlight (the hover chain) until the selection is cleared by clicking the
-  background, pressing Esc or selecting something else. Turn off with `highlightSelection: false`.
-- Node clicks now include the neighbouring nodes: `onNodeClick(node, event, { previous, next })` and
-  `nodeclick` events get `previous` / `next`. New `view.getConnections(id, { chain })` returns them on demand
-  (direct neighbours, or the whole upstream/downstream chain).
-- `hoverHighlight` option: `"chain"` (default) highlights the whole upstream and downstream chain of the
-  hovered node or edge; `"neighbors"` keeps the previous direct-connections behaviour.
-- `exportState()` now also saves the exact edge lines (`edges`) and the routing mode; `importState()`
-  reuses them, so a restored view looks exactly as the user left it. Lines on nodes whose size changed are
-  routed fresh.
-
-### Fixed
-- Highlighted and selected edges no longer lose their highlight when edges are redrawn (end of an animated
-  relayout, dragging).
-- The `worker` option no longer fails when given a `URL` object (it was sent through `postMessage`).
-
-## [1.0.0] — 2026-10-08
+First public release, open source under the MIT license.
 
 ### Added
 - Data model with ports, groups, edge types and constraints (pinned, fixed rank, same rank, left-of).
@@ -34,7 +17,13 @@ All notable changes to this project are documented here. This project follows [S
   with crossing-aware ordering, line hops, rounded corners, markers, edge labels; straight and curved modes.
 - HTML/SVG renderer, zoom/pan/pinch, drag with partial re-routing, pinning, hover highlighting,
   selection, save/load state, animated transitions, incremental updates, Web Worker support.
-- Licensing: online validation with ECDSA-signed tokens, 7-day cache, offline grace, past-due grace,
-  locked mode, development mode on localhost, offline license keys, trial build.
-- License server (Cloudflare Workers): validation, Lemon Squeezy/Stripe webhooks, customer portal,
-  private npm registry, daily cron for grace expiry, reminders and key-sharing alerts.
+- Clicking a node or edge keeps its highlight (the hover chain) until the selection is cleared by clicking the
+  background, pressing Esc or selecting something else. Turn off with `highlightSelection: false`.
+- Node clicks include the neighbouring nodes: `onNodeClick(node, event, { previous, next })` and
+  `nodeclick` events get `previous` / `next`. New `view.getConnections(id, { chain })` returns them on demand
+  (direct neighbours, or the whole upstream/downstream chain).
+- `hoverHighlight` option: `"chain"` (default) highlights the whole upstream and downstream chain of the
+  hovered node or edge; `"neighbors"` highlights direct connections only.
+- `exportState()` also saves the exact edge lines (`edges`) and the routing mode; `importState()`
+  reuses them, so a restored view looks exactly as the user left it. Lines on nodes whose size changed are
+  routed fresh.

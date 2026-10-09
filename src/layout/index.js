@@ -5,7 +5,6 @@ import { assignRanks } from './ranking.js';
 import { buildLayered, minimizeCrossings, initOrder } from './ordering.js';
 import { assignCoordinates } from './coords.js';
 import { portRelPositions } from '../routing/geometry.js';
-import { _lg } from '../license/gate.js';
 
 const toScreen = (dir, ix, iy) => {
   switch (dir) {
@@ -175,7 +174,6 @@ function flatLayout(model, extra = {}) {
   const dir = o.direction;
   const horizontal = dir === 'LR' || dir === 'RL';
   const warnings = [];
-  const lic = _lg(1);
 
   // internal (layout-space) sizes and port fractions along the order axis
   const info = new Map();
@@ -233,7 +231,7 @@ function flatLayout(model, extra = {}) {
     let initial;
     if (extra.hints && extra.hints.size) initial = hintedOrder(g, extra.hints, dir);
     const leftOf = model.constraints.filter((c) => c.type === 'leftOf' && idSet.has(c.a) && idSet.has(c.b)).map((c) => [c.a, c.b]);
-    const ord = minimizeCrossings(g, { maxIterations: lic ? o.maxIterations : 2, leftOf, initial });
+    const ord = minimizeCrossings(g, { maxIterations: o.maxIterations, leftOf, initial });
     result.crossings += ord.crossings;
 
     const co = assignCoordinates(g, ord.layers, {

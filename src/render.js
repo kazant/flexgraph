@@ -1,7 +1,6 @@
 // DOM + SVG rendering. Nodes are HTML divs, edges live in one SVG layer.
 
 import { NORMALS, resample, portRelPositions } from './routing/geometry.js';
-import { _lg } from './license/gate.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 let uid = 0;
@@ -186,7 +185,6 @@ export class Renderer {
   renderEdges(model, routing, interp) {
     const o = this.options;
     const keep = new Set();
-    const locked = !_lg(4);
     for (const e of model.edges) {
       const p = routing.paths.get(e.id);
       if (!p) continue;
@@ -205,7 +203,7 @@ export class Renderer {
       }
       g.setAttribute('class', `fg-edge fg-edge--${cssIdent(e.type)}${e.className ? ' ' + e.className : ''}`);
       const pts = interp ? interp.get(e.id) : null;
-      const d = pts ? polyD(pts) : edgePath(p, locked ? 0 : o.cornerRadius, o.lineHops && !locked ? p.hops : [], o.hopRadius);
+      const d = pts ? polyD(pts) : edgePath(p, o.cornerRadius, o.lineHops ? p.hops : [], o.hopRadius);
       const [hit, line] = g.childNodes;
       hit.setAttribute('d', d);
       line.setAttribute('d', d);

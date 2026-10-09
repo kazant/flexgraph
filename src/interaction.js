@@ -1,6 +1,5 @@
 // Drag, zoom, pan, hover and selection.
 
-import { _lg } from './license/gate.js';
 
 const CLICK_TOLERANCE = 4;
 
@@ -32,12 +31,10 @@ export function attachInteraction(view) {
     if (group) return { kind: 'group', id: group.dataset.id, el: group };
     return { kind: 'background' };
   };
-  const active = () => _lg(3);
 
   function onPointerDown(ev) {
-    if (!active()) return;
     if (ev.button !== undefined && ev.button !== 0 && ev.pointerType === 'mouse') return;
-    if (ev.target.closest && ev.target.closest('.fg-controls, .fg-license-overlay')) return;
+    if (ev.target.closest && ev.target.closest('.fg-controls')) return;
     // interactive content inside nodes (inputs, buttons, links) keeps working
     if (ev.target.closest && ev.target.closest('input, textarea, select, button, a, [data-fg-nodrag]')) return;
     pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
@@ -107,7 +104,7 @@ export function attachInteraction(view) {
   }
 
   function onWheel(ev) {
-    if (!active() || !o().zoomable) return;
+    if (!o().zoomable) return;
     ev.preventDefault();
     const k = r.transform.k * Math.exp(-ev.deltaY * (ev.ctrlKey ? 0.01 : 0.0015));
     view.zoomAt(k, ev.clientX, ev.clientY, true);

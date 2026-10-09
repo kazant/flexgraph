@@ -31,37 +31,23 @@
   </style>
 </head>
 <body>
-<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--commercial--><a href="#pricing">Pricing</a><!--/commercial--><!--commercial--><a href="#csp">CSP</a><a href="#offline">Offline</a><!--/commercial--><a href="#built">How it's built</a><a href="#maintenance">Maintenance</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
+<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><a href="#built">How it's built</a><a href="#maintenance">Maintenance</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a><a href="https://github.com/kazant/flexgraph">GitHub</a><a href="#support">♥ Sponsor</a></nav>
 <header>
   <h1>Relationship graphs with clean, logical lines.</h1>
   <p class="lead">A Dagre replacement in plain HTML, CSS &amp; JavaScript: fewer crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
   <div id="live"></div>
-  <p><!--commercial--><a class="btn" href="#pricing">$79 / month per project</a> &nbsp; <!--/commercial--><a href="../demo/">Open the full demo →</a></p>
+  <p><a href="../demo/">Open the full demo →</a></p>
 </header>
 
 <section id="start">
   <h2>Getting started</h2>
-<!--no-commercial:  <p>Install the package and render a graph into any element with a size:</p>
-  <pre>npm install @flexgraph-labs/flexgraph</pre>
-  <pre>import { createGraph } from "@flexgraph-labs/flexgraph";
-import "@flexgraph-labs/flexgraph/style.css";
+  <p>Install the package and render a graph into any element with a size:</p>
+  <pre>npm install @kazant/flexgraph</pre>
+  <pre>import { createGraph } from "@kazant/flexgraph";
+import "@kazant/flexgraph/style.css";
 
 const view = createGraph(document.getElementById("graph"), data, { direction: "LR" });</pre>
--->
-<!--commercial-->
-  <p>1. Subscribe, then get your npm token in the <a href="https://portal.flexgraph.example/portal/">customer portal</a> and add an <code>.npmrc</code> to your project:</p>
-  <pre>@flexgraph-labs:registry=https://npm.flexgraph.example/
-//npm.flexgraph.example/:_authToken=${FLEXGRAPH_NPM_TOKEN}</pre>
-  <p>2. Install and render:</p>
-  <pre>npm install @flexgraph-labs/flexgraph</pre>
-  <pre>import { createGraph, setLicenseKey } from "@flexgraph-labs/flexgraph";
-import "@flexgraph-labs/flexgraph/style.css";
 
-setLicenseKey("FG-PRJ-XXXX-XXXX-XXXX-XXXX");
-const view = createGraph(document.getElementById("graph"), data, { direction: "LR" });</pre>
-  <p>3. Register your production domain (and up to 3 staging domains) for the project in the portal. On <code>localhost</code> everything works without a key.</p>
-  <p>Want to try first? <code>npm install @flexgraph-labs/flexgraph-trial</code> — full features on localhost with a watermark.</p>
-<!--/commercial-->
 </section>
 
 <section id="api">
@@ -112,35 +98,7 @@ await view.importState(await (await fetch("/api/diagrams/42/layout")).json());
 view.on("change", (state) => save(state));</pre>
 </section>
 
-<!--commercial-->
-<section id="pricing">
-  <h2>Pricing</h2>
-  <div class="grid">
-    <div class="card featured"><div>Project license</div><div class="price">$79 <small>/ month per project</small></div>
-      <ul><li>1 production domain (+ subdomains optional)</li><li>3 staging / test / preview domains</li><li>localhost always free</li><li>All features and updates</li></ul></div>
-    <div class="card"><div>Annual</div><div class="price">$790 <small>/ year per project</small></div><ul><li>Two months free</li><li>Same terms as monthly</li></ul></div>
-    <div class="card"><div>Offline add-on</div><div class="price">$75 <small>/ month per project</small></div><ul><li>For intranets without internet access</li><li>Domain-bound key, renewed monthly</li></ul></div>
-  </div>
-  <h3>What happens if a payment fails?</h3>
-  <p>Your graphs keep working for 14 days and we email you on day 1, 7 and 13. After that, graphs on your site show a <b>“License inactive”</b> overlay to your users until the payment goes through. A canceled subscription keeps working until the end of the paid period.</p>
-  <p class="muted">Open-source and non-commercial projects: ask us about a free license.</p>
-</section>
-<!--/commercial-->
 
-<!--commercial-->
-<section id="csp">
-  <h2>Content Security Policy</h2>
-  <p>The library validates its license against <code>https://license.flexgraph.example</code>. If your site uses a CSP, allow it in <code>connect-src</code>:</p>
-  <pre>Content-Security-Policy: connect-src 'self' https://license.flexgraph.example</pre>
-  <p>Validation happens about once a week per browser (the signed token is cached). If the license server is unreachable, the graph keeps working.</p>
-</section>
-
-<section id="offline">
-  <h2>Offline / intranet projects</h2>
-  <p>With the offline add-on, the portal issues a signed key bound to your domain (<code>FG-OFF-…</code>). It needs no network access and is valid for the paid period + 14 days. A new key is emailed every month — update it in your project:</p>
-  <pre>setLicenseKey(process.env.FLEXGRAPH_OFFLINE_KEY);</pre>
-</section>
-<!--/commercial-->
 
 <section id="built">
   <h2>How it's built</h2>
@@ -152,7 +110,7 @@ view.on("change", (state) => save(state));</pre>
     <tr><td><code>esbuild</code></td><td>Building the minified bundles (dev dependency)</td><td>No</td></tr>
     <tr><td><code>dagre</code></td><td>Only for the quality comparison script (<code>npm run compare</code>)</td><td>No</td></tr>
   </table>
-  <p>Bundle size: about 79 kB minified (about 30 kB gzipped) for the main ESM file, plus an optional 38 kB Web Worker file. ESM and UMD builds, TypeScript definitions and a default stylesheet are included.</p>
+  <p>Bundle size: about 67 kB minified (about 25 kB gzipped) for the main ESM file, plus an optional 38 kB Web Worker file. ESM and UMD builds, TypeScript definitions and a default stylesheet are included.</p>
   <h3>Techniques</h3>
   <ul>
     <li><b>Layout:</b> a Sugiyama-style layered layout. Cycles are broken by reversing DFS back edges, layers come from longest-path ranking with compaction, and crossings are minimized with barycenter and median sweeps (the approach used by Graphviz <i>dot</i>), transposition and sifting, from several starting orders.</li>
@@ -162,9 +120,6 @@ view.on("change", (state) => save(state));</pre>
   </ul>
   <h3>Browser features used</h3>
   <p>SVG for edges and markers, HTML elements for nodes, CSS custom properties for theming, Pointer Events for drag, pan and pinch, <code>requestAnimationFrame</code> for animation, and optionally a Web Worker for large graphs. The layout engine itself uses no DOM, so it also runs in Node.js and in workers.</p>
-<!--commercial-->
-  <p>License verification uses <code>fetch</code>, Web Crypto (ECDSA P-256 signatures, with a pure-JS fallback on plain http pages) and <code>localStorage</code> to cache the signed token. The license server runs on Cloudflare Workers with D1 (database) and R2 (package storage).</p>
-<!--/commercial-->
   <p>Development needs Node.js 20 or newer; tests use the built-in <code>node --test</code> runner.</p>
 </section>
 
@@ -177,7 +132,7 @@ view.on("change", (state) => save(state));</pre>
   <table>
     <tr><th>Risk</th><th>Likelihood</th><th>What it means</th><th>How to reduce it</th></tr>
     <tr><td>No bug fixes</td><td>Medium</td><td>Layout or routing problems in unusual graphs would stay unfixed.</td><td>Test with your own real graphs before you rely on it; pin the version that works for you.</td></tr>
-    <tr><td>No security fixes</td><td>Low</td><td>The library never runs or loads code at runtime. The main risk is HTML you pass in yourself (the <code>html</code> field and <code>renderNode</code> strings) — labels are always inserted as plain text.</td><td>Escape user-provided content in custom node HTML, or return DOM elements from <code>renderNode</code>.</td></tr>
+    <tr><td>No security fixes</td><td>Low</td><td>The library never runs or loads code and makes no network requests. The main risk is HTML you pass in yourself (the <code>html</code> field and <code>renderNode</code> strings) — labels are always inserted as plain text.</td><td>Escape user-provided content in custom node HTML, or return DOM elements from <code>renderNode</code>.</td></tr>
     <tr><td>Browser changes</td><td>Low</td><td>The features used are stable web standards that browsers keep compatible.</td><td>Nothing needed in practice.</td></tr>
     <tr><td>Tooling drift</td><td>Low–medium</td><td>New TypeScript, bundler or framework versions might need small adjustments (types, import paths).</td><td>The package is plain ES modules + UMD with no build step required; adjustments can be made locally.</td></tr>
     <tr><td>No support or new features</td><td>Medium</td><td>Questions go unanswered and requested features never arrive.</td><td>Keep the integration thin (one wrapper component), so you can extend or replace it.</td></tr>
@@ -188,26 +143,20 @@ view.on("change", (state) => save(state));</pre>
     <li><b>Keep your data portable.</b> Nodes, edges and groups map directly onto Dagre (nodes, edges, clusters) and ELK (which also has ports), so moving to another library is a mapping exercise. Layouts saved with <code>exportState()</code> are plain coordinates.</li>
     <li><b>Wrap it.</b> Use FlexGraph through one component or module in your app, so a replacement only touches one place.</li>
   </ul>
-<!--commercial-->
-  <h3>The license check</h3>
-  <p>If the license service is ever shut down, graphs keep working: an unreachable server never locks the graph (first-time visitors run "unverified", with a console warning). Two things to be aware of:</p>
-  <ul>
-    <li><b>Installing new copies</b> needs the private registry. Keep the package tarball, as above.</li>
-    <li><b>The license domain must stay in safe hands.</b> The graph only locks when the license server rejects a key or sends an invalid answer. If the domain were ever taken over by someone else, they could do exactly that, so keep it renewed.</li>
-  </ul>
-<!--/commercial-->
+</section>
+
+<section id="support">
+  <h2>Support the project</h2>
+  <p>FlexGraph is free and open source under the MIT license: use it in personal and commercial projects, modify it and ship it, with no fees. It is built and maintained by one person.</p>
+  <p>If it saves you or your company time, <a href="https://github.com/sponsors/kazant">a donation through GitHub Sponsors</a> is much appreciated and helps keep it maintained. Bug reports, ideas and pull requests on <a href="https://github.com/kazant/flexgraph">GitHub</a> are just as welcome.</p>
 </section>
 
 <section id="faq">
   <h2>FAQ</h2>
-<!--commercial-->
-  <h3>What counts as a project?</h3><p>One application: one production domain plus up to three non-production domains. Three applications need three licenses.</p>
-  <h3>What data does the license check send?</h3><p>The license key, the hostname and the library version. Nothing about your users. See the <a href="PRIVACY.md">privacy policy</a>.</p>
-<!--/commercial-->
   <h3>Can I use it with React / Vue / Svelte / Angular?</h3><p>Yes. FlexGraph has no framework dependencies: create the graph when the component is mounted and call <code>view.destroy()</code> when it is removed. In React that is a <code>useEffect</code>, in Vue <code>onMounted</code> / <code>onUnmounted</code>, in Svelte <code>onMount</code>.</p>
-  <h3>How do I use it in Angular?</h3><p>FlexGraph works with zoneless Angular (the default in new projects): create the graph once the element has rendered, update it from an <code>effect</code> when the input changes, and destroy it with the component. Click callbacks can set signals directly; that is enough to update the view. Add the stylesheet to <code>"styles"</code> in <code>angular.json</code>: <code>"node_modules/@flexgraph-labs/flexgraph/style.css"</code>.</p>
+  <h3>How do I use it in Angular?</h3><p>FlexGraph works with zoneless Angular (the default in new projects): create the graph once the element has rendered, update it from an <code>effect</code> when the input changes, and destroy it with the component. Click callbacks can set signals directly; that is enough to update the view. Add the stylesheet to <code>"styles"</code> in <code>angular.json</code>: <code>"node_modules/@kazant/flexgraph/style.css"</code>.</p>
   <pre>import { Component, ElementRef, DestroyRef, afterNextRender, effect, inject, input, signal, viewChild } from "@angular/core";
-import { createGraph, type GraphData, type GraphView } from "@flexgraph-labs/flexgraph";
+import { createGraph, type GraphData, type GraphView } from "@kazant/flexgraph";
 
 @Component({
   selector: "app-graph",
@@ -239,12 +188,11 @@ export class GraphComponent {
   <p>Still on zone.js? The same component works; optionally create the graph inside <code>NgZone.runOutsideAngular</code> so dragging and zooming don't trigger change detection. For very large graphs, copy <code>flexgraph.worker.js</code> to your assets and pass its URL as the <code>worker</code> option.</p>
 </section>
 
-<footer>© FlexGraph Labs AS<!--commercial--> · <a href="../LICENSE.md">License (EULA)</a> · <a href="TERMS.md">Terms</a> · <a href="PRIVACY.md">Privacy</a><!--/commercial--></footer>
+<footer>FlexGraph is free and open source under the <a href="../LICENSE.txt">MIT license</a>, made by <a href="https://github.com/kazant">Alexander Pettersen (kazant)</a> · <a href="https://github.com/kazant/flexgraph">GitHub</a> · <a href="https://www.npmjs.com/package/@kazant/flexgraph">npm</a></footer>
 
 <script type="module">
-  import { createGraph, setLicenseKey } from '../src/index.js';
+  import { createGraph } from '../src/index.js';
   import { grouped } from '../demo/samples.js';
-  setLicenseKey('FG-PRJ-DEMO-SHOW-CASE-0001'); // dummy key until the license server is live
   createGraph(document.getElementById('live'), grouped(), { controls: true });
 </script>
 </body>
