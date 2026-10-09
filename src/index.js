@@ -405,6 +405,32 @@ export class GraphView {
     }
   }
 
+  // Right-click: tell the app what was clicked so it can open its own menu. The browser menu is only
+  // suppressed when the app handles this kind of target (an option callback or a "contextmenu" listener).
+  _contextMenu(tgt, ev) {
+    const o = this.options;
+    let payload, handler;
+    if (tgt.kind === 'node' && this.model?.nodeById.has(tgt.id)) {
+      const node = this.model.nodeById.get(tgt.id).data, c = this.getConnections(tgt.id);
+      payload = { kind: 'node', id: tgt.id, node, previous: c.previous, next: c.next, event: ev };
+      handler = o.onNodeContextMenu && (() => o.onNodeContextMenu(node, ev, c));
+    } else if (tgt.kind === 'edge' && this.model?.edgeById.has(tgt.id)) {
+      const edge = this.model.edgeById.get(tgt.id).data;
+      payload = { kind: 'edge', id: tgt.id, edge, event: ev };
+      handler = o.onEdgeContextMenu && (() => o.onEdgeContextMenu(edge, ev));
+    } else if (tgt.kind === 'group' && this.model?.groupById.has(tgt.id)) {
+      const group = this.model.groupById.get(tgt.id).data;
+      payload = { kind: 'group', id: tgt.id, group, event: ev };
+      handler = o.onGroupContextMenu && (() => o.onGroupContextMenu(group, ev));
+    } else {
+      payload = { kind: 'background', event: ev };
+      handler = o.onBackgroundContextMenu && (() => o.onBackgroundContextMenu(ev));
+    }
+    if (handler || this._listeners.get('contextmenu')?.size) ev.preventDefault();
+    handler?.();
+    this._emit('contextmenu', payload);
+  }
+
   _hover(tgt) {
     this._hovered = tgt || null;
     this._applyHighlight();

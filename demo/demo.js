@@ -32,12 +32,45 @@ function load(name) {
     animate: $('animate').checked,
     hoverHighlight: $('hover').value,
     onNodeClick: (node, ev, { previous, next }) => { $('s-msg').textContent = `Clicked "${node.label ?? node.id}" · previous: ${names(previous)} · next: ${names(next)}`; },
-    onEdgeClick: (edge) => { $('s-msg').textContent = `Clicked edge ${edge.source} → ${edge.target}${edge.type ? ' (' + edge.type + ')' : ''}`; }
+    onEdgeClick: (edge) => { $('s-msg').textContent = `Clicked edge ${edge.source} → ${edge.target}${edge.type ? ' (' + edge.type + ')' : ''}`; },
+    // Right-click: FlexGraph says what was clicked, the app shows its own menu
+    onNodeContextMenu: (node, ev, { previous, next }) => openMenu(ev, node.label ?? node.id, [
+      view.exportState().nodes[node.id]?.pinned ? ['Unpin', () => view.unpin(node.id)] : ['Pin here', () => view.pin(node.id)],
+      [`Select (${previous.length} before, ${next.length} after)`, () => view.select(node.id)],
+      ['Remove node', () => update({ ...data, nodes: data.nodes.filter((n) => n.id !== node.id), edges: data.edges.filter((e) => e.source !== node.id && e.target !== node.id) })]
+    ]),
+    onEdgeContextMenu: (edge, ev) => openMenu(ev, `${edge.source} → ${edge.target}`, [
+      ['Remove edge', () => update({ ...data, edges: data.edges.filter((e) => e !== edge && !(e.id != null && e.id === edge.id)) })]
+    ]),
+    onBackgroundContextMenu: (ev) => openMenu(ev, 'Graph', [['Relayout', () => timed(() => view.relayout())], ['Fit to screen', () => view.fit()]])
   });
   view.on('layout', () => stats());
   view.on('dragend', () => stats());
   view.ready.then(() => { $('s-time').textContent = Math.round(performance.now() - t0); stats(); });
 }
+
+// ---- example context menu (app code, not part of FlexGraph) ----
+const menu = $('menu');
+function openMenu(ev, title, items) {
+  menu.innerHTML = '';
+  const t = document.createElement('li'); t.className = 'title'; t.textContent = title; menu.append(t);
+  for (const [label, action] of items) {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.textContent = label; b.setAttribute('role', 'menuitem');
+    b.onclick = () => { closeMenu(); action(); };
+    li.append(b); menu.append(li);
+  }
+  menu.hidden = false;
+  const w = menu.offsetWidth, h = menu.offsetHeight;
+  menu.style.left = Math.min(ev.clientX, innerWidth - w - 8) + 'px';
+  menu.style.top = Math.min(ev.clientY, innerHeight - h - 8) + 'px';
+  menu.querySelector('button')?.focus();
+}
+function closeMenu() { menu.hidden = true; }
+addEventListener('pointerdown', (e) => { if (!menu.contains(e.target)) closeMenu(); }, true);
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+addEventListener('scroll', closeMenu, true);
+function update(next) { data = next; timed(() => view.updateGraph(data, { mode: 'stable' })); }
 
 function stats() {
   const L = view.getLayout();

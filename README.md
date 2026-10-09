@@ -69,7 +69,25 @@ Edge `type` sets the CSS class `fg-edge--<type>` and default markers (`has-many`
 
 ### Events
 
-`view.on(name, cb)` with `layout`, `select`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `animationend`.
+`view.on(name, cb)` with `layout`, `select`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `animationend`, `contextmenu`.
+
+### Right-click (context menus)
+
+FlexGraph has no built-in menu; it tells you what was right-clicked so you can open your own:
+
+```js
+createGraph(el, data, {
+  onNodeContextMenu: (node, event, { previous, next }) => openMyMenu(event.clientX, event.clientY, node),
+  onEdgeContextMenu: (edge, event) => { /* … */ },
+  onGroupContextMenu: (group, event) => { /* … */ },
+  onBackgroundContextMenu: (event) => { /* … */ }
+});
+
+// or one listener for everything: kind is "node" | "edge" | "group" | "background"
+view.on("contextmenu", ({ kind, node, edge, group, event }) => { /* … */ });
+```
+
+The browser's own menu is only suppressed for targets you handle. Text fields and links inside nodes keep the normal browser menu.
 
 ### Theming
 

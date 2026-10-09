@@ -116,6 +116,11 @@ export interface GraphOptions {
   onNodeClick?: (node: NodeSpec, event: PointerEvent, connections: Connections) => void;
   onEdgeClick?: (edge: EdgeSpec, event: PointerEvent) => void;
   onBackgroundClick?: (event: PointerEvent) => void;
+  /** Right-click on a node. The browser menu is suppressed when this is set; open your own menu at event.clientX / clientY. */
+  onNodeContextMenu?: (node: NodeSpec, event: MouseEvent, connections: Connections) => void;
+  onEdgeContextMenu?: (edge: EdgeSpec, event: MouseEvent) => void;
+  onGroupContextMenu?: (group: GroupSpec, event: MouseEvent) => void;
+  onBackgroundContextMenu?: (event: MouseEvent) => void;
 }
 
 export interface ViewState {
@@ -145,6 +150,12 @@ export interface GraphEvents {
   change: ViewState;
   viewport: { x: number; y: number; k: number };
   animationend: void;
+  /** Right-click anywhere in the graph. Registering a listener suppresses the browser menu inside the graph. */
+  contextmenu:
+    | { kind: 'node'; id: string; node: NodeSpec; previous: NodeSpec[]; next: NodeSpec[]; event: MouseEvent }
+    | { kind: 'edge'; id: string; edge: EdgeSpec; event: MouseEvent }
+    | { kind: 'group'; id: string; group: GroupSpec; event: MouseEvent }
+    | { kind: 'background'; event: MouseEvent };
 }
 
 export interface Connections {

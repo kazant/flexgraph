@@ -119,6 +119,11 @@ export function attachInteraction(view) {
     hoverId = key;
     view._hover(key ? tgt : null);
   }
+  function onContextMenu(ev) {
+    // text fields and links inside nodes keep the browser menu (copy, paste, open link)
+    if (ev.target.closest && ev.target.closest('.fg-controls, input, textarea, select, a')) return;
+    view._contextMenu(targetOf(ev), ev);
+  }
   function onLeave() { if (hoverId) { hoverId = null; view._hover(null); } }
 
   function onKey(ev) {
@@ -134,6 +139,7 @@ export function attachInteraction(view) {
   vp.addEventListener('pointercancel', onPointerUp);
   vp.addEventListener('wheel', onWheel, { passive: false });
   vp.addEventListener('pointerover', onOver);
+  vp.addEventListener('contextmenu', onContextMenu);
   vp.addEventListener('pointerleave', onLeave);
   vp.addEventListener('keydown', onKey);
   return () => {
@@ -143,6 +149,7 @@ export function attachInteraction(view) {
     vp.removeEventListener('pointercancel', onPointerUp);
     vp.removeEventListener('wheel', onWheel);
     vp.removeEventListener('pointerover', onOver);
+    vp.removeEventListener('contextmenu', onContextMenu);
     vp.removeEventListener('pointerleave', onLeave);
     vp.removeEventListener('keydown', onKey);
     if (raf) cancelAnimationFrame(raf);

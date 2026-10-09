@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-10-09
+
+### Added
+- Right-click support for custom context menus: `onNodeContextMenu(node, event, { previous, next })`,
+  `onEdgeContextMenu`, `onGroupContextMenu`, `onBackgroundContextMenu` and a `contextmenu` event with
+  `{ kind, node | edge | group, event }`. FlexGraph has no built-in menu; the browser menu is only suppressed for
+  targets the app handles.
+
 ## [1.0.2] — 2026-10-09
 
 ### Fixed

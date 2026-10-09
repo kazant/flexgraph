@@ -71,6 +71,7 @@ const view = createGraph(document.getElementById("graph"), data, { direction: "L
     <tr><td><code>hoverHighlight</code></td><td><code>"chain"</code></td><td><code>chain</code>: hovering lights up the whole path from start to end; <code>neighbors</code>: only direct connections</td></tr>
     <tr><td><code>highlightSelection</code></td><td>true</td><td>Clicking a node or edge selects it and keeps its highlight until you click the background, press Esc or select something else</td></tr>
     <tr><td><code>renderNode(node, el)</code></td><td></td><td>Custom node content (HTML string or element)</td></tr>
+    <tr><td><code>onNodeContextMenu(node, event, { previous, next })</code>, <code>onEdgeContextMenu</code>, <code>onGroupContextMenu</code>, <code>onBackgroundContextMenu</code></td><td></td><td>Right-click callbacks for opening your own menu (FlexGraph has none built in). The browser menu is suppressed only for targets you handle</td></tr>
     <tr><td><code>onNodeClick(node, event, { previous, next })</code>, <code>onEdgeClick</code></td><td></td><td>Click callbacks. <code>previous</code> / <code>next</code> are the nodes directly before and after the clicked node</td></tr>
     <tr><td><code>worker</code></td><td></td><td>URL of <code>flexgraph.worker.js</code> to lay out large graphs off the main thread</td></tr>
   </table>
@@ -81,6 +82,7 @@ view.exportState()         // { nodes: { id: { x, y, pinned } }, edges: { id: [[
 view.importState(state)
 view.pin(id) / view.unpin(id) / view.fit() / view.zoomBy(1.2) / view.select(id)
 view.on("nodeclick", ({ node, previous, next }) => …)
+view.on("contextmenu", ({ kind, node, edge, group, event }) => …)   // right-click
 view.getConnections(id)                 // { previous, next, incoming, outgoing }
 view.getConnections(id, { chain: true }) // everything upstream / downstream</pre>
   <h3>Saving a layout</h3>
