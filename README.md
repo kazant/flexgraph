@@ -106,19 +106,6 @@ Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wra
 - **Size:** about 67 kB minified / 25 kB gzipped (ESM), worker 38 kB.
 - **Tooling:** Node.js 20+, tests with `node --test`.
 
-## Quality vs Dagre
-
-`npm run compare` on the bundled samples (lower is better):
-
-| Graph | Nodes / edges | Crossings FlexGraph / Dagre | Edges over nodes FlexGraph / Dagre |
-|---|---|---|---|
-| ERD (ports, groups) | 9 / 10 | 0 / 2 | 0 / 2 |
-| Tree | 22 / 21 | 0 / 0 | 0 / 0 |
-| Dense | 18 / 40 | 47 / 61 | 0 / 5 |
-| Cycles | 7 / 11 | 1 / 0 | 0 / 0 |
-| Grouped | 12 / 14 | 0 / 1 | 0 / 0 |
-| Large | 150 / 208 | 461 / 561 | 0 / 131 |
-
 ## Development
 
 ```bash
