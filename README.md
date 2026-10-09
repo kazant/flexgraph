@@ -90,6 +90,23 @@ import { layoutGraph } from "@flexgraph-labs/flexgraph";
 const { layout, routing } = layoutGraph(data, { direction: "LR" });   // Maps of rects and point lists
 ```
 
+## How it's built
+
+Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wrapper of Dagre, ELK or other libraries.
+
+| Package | Used for | Shipped? |
+|---|---|---|
+| none | runtime: the library imports nothing | — |
+| `esbuild` | building the bundles (dev dependency) | no |
+| `dagre` | only `npm run compare` (quality comparison) | no |
+| `wrangler` | deploying the license server (`server/`, dev dependency) | no |
+
+- **Layout:** Sugiyama-style layered layout: DFS cycle removal, longest-path ranking with compaction, barycenter/median crossing minimization (as in Graphviz *dot*) with transposition and sifting, isotonic-regression coordinate assignment.
+- **Routing:** A* on a sparse orthogonal grid with bend/crossing penalties, track nudging, line hops.
+- **Browser features:** SVG, CSS custom properties, Pointer Events, `requestAnimationFrame`, optional Web Worker. License checks use `fetch`, Web Crypto (ECDSA P-256, pure-JS fallback) and `localStorage`.
+- **Size:** about 79 kB minified / 30 kB gzipped (ESM), worker 38 kB.
+- **Tooling:** Node.js 20+, tests with `node --test`; the license server runs on Cloudflare Workers + D1 + R2.
+
 ## Quality vs Dagre
 
 `npm run compare` on the bundled samples (lower is better):

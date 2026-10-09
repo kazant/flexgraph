@@ -31,7 +31,7 @@
   </style>
 </head>
 <body>
-<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--commercial--><a href="#pricing">Pricing</a><!--/commercial--><!--commercial--><a href="#csp">CSP</a><a href="#offline">Offline</a><!--/commercial--><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
+<nav><b>FlexGraph</b><a href="#start">Getting started</a><a href="#api">API</a><!--commercial--><a href="#pricing">Pricing</a><!--/commercial--><!--commercial--><a href="#csp">CSP</a><a href="#offline">Offline</a><!--/commercial--><a href="#built">How it's built</a><a href="#faq">FAQ</a><a href="../showcase/">Examples</a><a href="../demo/">Playground</a></nav>
 <header>
   <h1>Relationship graphs with clean, logical lines.</h1>
   <p class="lead">A Dagre replacement in plain HTML, CSS &amp; JavaScript: fewer crossings, ports, orthogonal routing that never goes through nodes, lines that never sit on top of each other, groups and full layout control.</p>
@@ -141,6 +141,32 @@ view.on("change", (state) => save(state));</pre>
   <pre>setLicenseKey(process.env.FLEXGRAPH_OFFLINE_KEY);</pre>
 </section>
 <!--/commercial-->
+
+<section id="built">
+  <h2>How it's built</h2>
+  <p>FlexGraph is written from scratch in plain JavaScript (ES modules, ES2020). It is not a fork or wrapper of Dagre, ELK or any other library.</p>
+  <h3>Dependencies</h3>
+  <table>
+    <tr><th>Package</th><th>Used for</th><th>Shipped to your users?</th></tr>
+    <tr><td><b>None</b></td><td>Runtime: the library imports nothing</td><td>—</td></tr>
+    <tr><td><code>esbuild</code></td><td>Building the minified bundles (dev dependency)</td><td>No</td></tr>
+    <tr><td><code>dagre</code></td><td>Only for the quality comparison script (<code>npm run compare</code>)</td><td>No</td></tr>
+  </table>
+  <p>Bundle size: about 79 kB minified (about 30 kB gzipped) for the main ESM file, plus an optional 38 kB Web Worker file. ESM and UMD builds, TypeScript definitions and a default stylesheet are included.</p>
+  <h3>Techniques</h3>
+  <ul>
+    <li><b>Layout:</b> a Sugiyama-style layered layout. Cycles are broken by reversing DFS back edges, layers come from longest-path ranking with compaction, and crossings are minimized with barycenter and median sweeps (the approach used by Graphviz <i>dot</i>), transposition and sifting, from several starting orders.</li>
+    <li><b>Node positions:</b> weighted isotonic regression per layer (pool-adjacent-violators), which keeps long edges straight and respects pinned nodes.</li>
+    <li><b>Edge routing:</b> A* search on a sparse orthogonal grid around the nodes, with penalties for bends and crossings; parallel segments are spread onto separate tracks, with line hops where lines must cross.</li>
+    <li><b>Groups and constraints:</b> compound layout so group boxes never overlap; pinned, same-rank, fixed-rank and left-of constraints.</li>
+  </ul>
+  <h3>Browser features used</h3>
+  <p>SVG for edges and markers, HTML elements for nodes, CSS custom properties for theming, Pointer Events for drag, pan and pinch, <code>requestAnimationFrame</code> for animation, and optionally a Web Worker for large graphs. The layout engine itself uses no DOM, so it also runs in Node.js and in workers.</p>
+<!--commercial-->
+  <p>License verification uses <code>fetch</code>, Web Crypto (ECDSA P-256 signatures, with a pure-JS fallback on plain http pages) and <code>localStorage</code> to cache the signed token. The license server runs on Cloudflare Workers with D1 (database) and R2 (package storage).</p>
+<!--/commercial-->
+  <p>Development needs Node.js 20 or newer; tests use the built-in <code>node --test</code> runner.</p>
+</section>
 
 <section id="faq">
   <h2>FAQ</h2>
