@@ -1,6 +1,7 @@
 // DOM + SVG rendering. Nodes are HTML divs, edges live in one SVG layer.
 
 import { NORMALS, resample, portRelPositions } from './routing/geometry.js';
+import { placeLabels } from './labels.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 let uid = 0;
@@ -52,10 +53,12 @@ export class Renderer {
     this.groupEls = new Map();
     this.labelEls = new Map();
     this.markersUsed = new Set();
+    this.expanded = new Set(); // ids of nodes showing their details
     this.transform = { x: 0, y: 0, k: 1 };
   }
 
   destroy() {
+    clearTimeout(this._settle);
     this.viewport.remove();
     this.container.classList.remove('fg-container');
   }
@@ -64,6 +67,7 @@ export class Renderer {
 
   /** Create/update node elements from raw input nodes. Returns measured sizes. */
   syncNodes(rawNodes) {
+    const o = this.options;
     const keep = new Set();
     const sizes = new Map();
     const toMeasure = [];
@@ -71,7 +75,9 @@ export class Renderer {
       const id = String(n.id);
       keep.add(id);
       let e = this.nodeEls.get(id);
-      const sig = nodeSignature(n);
+      const expandable = isExpandable(n, o);
+      const expanded = expandable && this.expanded.has(id);
+      const sig = nodeSignature(n) + (expandable ? (expanded ? '+' : '-') : '');
       if (!e) {
         e = el('div', 'fg-node');
         e.dataset.id = id;
@@ -80,31 +86,63 @@ export class Renderer {
       }
       if (e._sig !== sig) {
         e._sig = sig;
-        e.className = 'fg-node' + (n.className ? ' ' + n.className : '') + (n.type ? ' fg-node--' + n.type : '');
+        e.className = 'fg-node' + (n.className ? ' ' + n.className : '') + (n.type ? ' fg-node--' + n.type : '') +
+          (expandable ? ' fg-node--expandable' : '') + (expanded ? ' fg-node--expanded' : '');
         e.innerHTML = '';
-        const custom = this.options.renderNode ? this.options.renderNode(n, e) : undefined;
-        if (typeof custom === 'string') e.innerHTML = custom;
-        else if (custom instanceof Node) e.appendChild(custom);
+        const body = expandable ? el('div', 'fg-node__body') : e;
+        if (expandable) e.appendChild(body);
+        const custom = o.renderNode ? o.renderNode(n, body) : undefined;
+        if (typeof custom === 'string') body.innerHTML = custom;
+        else if (custom instanceof Node) body.appendChild(custom);
         else if (custom === undefined) {
-          if (n.html != null) e.innerHTML = n.html;
-          else { const l = el('div', 'fg-node__label'); l.textContent = n.label ?? id; e.appendChild(l); }
+          if (n.html != null) body.innerHTML = n.html;
+          else { const l = el('div', 'fg-node__label'); l.textContent = n.label ?? id; body.appendChild(l); }
+        }
+        if (expandable) {
+          // details are only built while the node is open, so large graphs stay cheap
+          if (expanded) {
+            const d = el('div', 'fg-node__details');
+            const content = o.renderDetails ? o.renderDetails(n, d) : n.details;
+            if (typeof content === 'string') d.innerHTML = content;
+            else if (content instanceof Node) d.appendChild(content);
+            e.appendChild(d);
+          }
+          e.appendChild(toggleButton(expanded, o));
         }
         e._measured = null;
       }
-      const hasW = typeof n.width === 'number', hasH = typeof n.height === 'number';
+      // an open node grows to fit its details, so a fixed height no longer applies
+      const hasW = typeof n.width === 'number', hasH = typeof n.height === 'number' && !expanded;
       e.style.width = hasW ? n.width + 'px' : '';
       e.style.height = hasH ? n.height + 'px' : '';
       if (!hasW || !hasH) toMeasure.push([id, e, hasW ? n.width : null, hasH ? n.height : null]);
     }
     for (const [id, e] of this.nodeEls) if (!keep.has(id)) { e.remove(); this.nodeEls.delete(id); }
-    // measure in one pass (read after all writes)
-    for (const [, e] of toMeasure) e.classList.add('fg-node--measuring');
+    // measure in one pass (read after all writes); a given width is kept so text wraps at it
+    for (const [, e, w] of toMeasure) e.classList.add(w == null ? 'fg-node--measuring' : 'fg-node--measuring-h');
     for (const [id, e, w, h] of toMeasure) {
-      if (!e._measured) e._measured = { width: Math.ceil(e.offsetWidth) || this.options.defaultNodeWidth, height: Math.ceil(e.offsetHeight) || this.options.defaultNodeHeight };
+      if (!e._measured) {
+        // offsetWidth rounds to whole pixels; rounding down would make the text wrap, so use the exact size
+        const b = e.getBoundingClientRect(), k = this.transform.k || 1;
+        e._measured = { width: Math.ceil(b.width / k - 0.01) || this.options.defaultNodeWidth, height: Math.ceil(b.height / k - 0.01) || this.options.defaultNodeHeight };
+      }
       sizes.set(id, { width: w ?? e._measured.width, height: h ?? e._measured.height });
     }
-    for (const [, e] of toMeasure) e.classList.remove('fg-node--measuring');
+    for (const [, e] of toMeasure) e.classList.remove('fg-node--measuring', 'fg-node--measuring-h');
     return sizes;
+  }
+
+  /** Small badges on nodes (explore mode: how many children a node has). Map id -> { text, open, title }. */
+  renderBadges(badges) {
+    for (const [id, e] of this.nodeEls) {
+      const spec = badges && badges.get(id);
+      let b = e.querySelector(':scope > .fg-node__badge');
+      if (!spec) { b?.remove(); continue; }
+      if (!b) { b = el('div', 'fg-node__badge'); e.appendChild(b); }
+      if (b.textContent !== spec.text) b.textContent = spec.text;
+      b.classList.toggle('fg-node__badge--open', !!spec.open);
+      b.title = spec.title || '';
+    }
   }
 
   renderPorts(model) {
@@ -182,9 +220,10 @@ export class Renderer {
     this.markersUsed.add(name);
   }
 
-  renderEdges(model, routing, interp) {
+  renderEdges(model, routing, interp, rects) {
     const o = this.options;
     const keep = new Set();
+    const labeled = [];
     for (const e of model.edges) {
       const p = routing.paths.get(e.id);
       if (!p) continue;
@@ -211,32 +250,55 @@ export class Renderer {
         if (name && MARKERS[name]) { this.ensureMarker(name); line.setAttribute(attr, `url(#${this.id}-m-${name})`); }
         else line.removeAttribute(attr);
       }
-      this.renderLabel(e, interp ? null : p);
+      if (this.renderLabel(e, !interp) && !interp) labeled.push([e.id, p]);
     }
-    for (const [id, g] of this.edgeEls) if (!keep.has(id)) { g.remove(); this.edgeEls.delete(id); this.renderLabel({ id, label: null }, null); }
+    for (const [id, g] of this.edgeEls) if (!keep.has(id)) { g.remove(); this.edgeEls.delete(id); this.renderLabel({ id, label: null }, false); }
+    if (labeled.length) this.placeLabels(labeled, routing, rects);
     // keep SVG paint order equal to model order (line hops assume it)
     for (const e of model.edges) { const g = this.edgeEls.get(e.id); if (g) this.edgesGroup.appendChild(g); }
   }
 
-  renderLabel(e, p) {
+  /** Create/update the label element. Returns true if the edge has a label to place. */
+  renderLabel(e, visible) {
     let lab = this.labelEls.get(e.id);
-    if (e.label == null || e.label === '') { if (lab) { lab.remove(); this.labelEls.delete(e.id); } return; }
+    if (e.label == null || e.label === '') { if (lab) { lab.remove(); this.labelEls.delete(e.id); } return false; }
     if (!lab) {
       lab = el('div', 'fg-edge-label');
       lab.dataset.id = e.id;
       this.labelsLayer.appendChild(lab);
       this.labelEls.set(e.id, lab);
     }
-    lab.textContent = e.label;
-    if (!p) { lab.style.visibility = 'hidden'; return; }
-    lab.style.visibility = '';
-    const pos = labelPosition(p.points);
-    lab.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+    if (lab.textContent !== String(e.label)) { lab.textContent = e.label; lab._size = null; }
+    lab.style.visibility = visible ? '' : 'hidden';
+    return true;
+  }
+
+  /** Position labels so they don't overlap each other, nodes or other lines. */
+  placeLabels(labeled, routing, rects) {
+    const items = [];
+    for (const [id, p] of labeled) {
+      const lab = this.labelEls.get(id);
+      if (!lab._size) lab._size = { width: lab.offsetWidth, height: lab.offsetHeight };
+      items.push({ id, points: p.points, width: lab._size.width, height: lab._size.height });
+    }
+    const edges = [...routing.paths].map(([id, p]) => [id, p.points]);
+    const pos = placeLabels(items, { nodes: rects ? rects.values() : [], edges });
+    for (const [id, c] of pos) {
+      const lab = this.labelEls.get(id), sz = lab._size;
+      lab.style.transform = `translate(${f(c.x - sz.width / 2)}px, ${f(c.y - sz.height / 2)}px)`;
+    }
   }
 
   setTransform(t) {
     this.transform = t;
-    this.world.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.k})`;
+    this.world.style.transform = `translate(${Math.round(t.x)}px, ${Math.round(t.y)}px) scale(${t.k})`;
+    // lets CSS keep things a constant size on screen (the edge hit area)
+    if (this._k !== t.k) { this._k = t.k; this.world.style.setProperty('--fg-zoom', t.k); }
+    // While panning/zooming the world is its own compositor layer (smooth), but that layer is a bitmap
+    // drawn at the old scale. Dropping it once the view settles makes the browser redraw text sharp.
+    this.world.classList.add('fg-moving');
+    clearTimeout(this._settle);
+    this._settle = setTimeout(() => this.world.classList.remove('fg-moving'), 150);
   }
 }
 
@@ -249,18 +311,24 @@ function el(tag, cls) {
 function cssIdent(s) { return String(s).replace(/[^a-zA-Z0-9_-]/g, '_'); }
 
 function nodeSignature(n) {
-  return JSON.stringify([n.label, n.html, n.className, n.type, n.columns, n.data]);
+  return JSON.stringify([n.label, n.html, n.className, n.type, n.columns, n.data, n.details]);
 }
 
-/** Midpoint of the longest segment. */
-export function labelPosition(points) {
-  let best = 0, bi = 0;
-  for (let i = 0; i < points.length - 1; i++) {
-    const L = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
-    if (L > best) { best = L; bi = i; }
-  }
-  const a = points[bi], b = points[bi + 1] || a;
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+/** Nodes with `details` (or every node when `renderDetails` is set) get a details toggle; `expandable` overrides. */
+export function isExpandable(n, o) {
+  if (n.expandable != null) return !!n.expandable;
+  return n.details != null || !!o.renderDetails;
+}
+
+const CHEVRON = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function toggleButton(expanded, o) {
+  const b = el('button', 'fg-node__toggle');
+  b.type = 'button';
+  b.setAttribute('aria-expanded', String(expanded));
+  b.innerHTML = `<span></span>${CHEVRON}`;
+  b.firstChild.textContent = expanded ? o.collapseText : o.expandText;
+  return b;
 }
 
 const f = (n) => Math.round(n * 100) / 100;

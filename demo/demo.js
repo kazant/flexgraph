@@ -38,13 +38,24 @@ function load(name) {
       view.exportState().nodes[node.id]?.pinned ? ['Unpin', () => view.unpin(node.id)] : ['Pin here', () => view.pin(node.id)],
       [`Select (${previous.length} before, ${next.length} after)`, () => view.select(node.id)],
       ['Fit flow to view', () => { view.select(node.id); view.fitFlow(node.id); }],
-      ['Remove node', () => update({ ...data, nodes: data.nodes.filter((n) => n.id !== node.id), edges: data.edges.filter((e) => e.source !== node.id && e.target !== node.id) })]
+      ['Remove node', () => removeNodes([node.id])],
+      ...(view.getSelectedNodes().length > 1 ? [[`Remove ${view.getSelectedNodes().length} selected nodes`, () => removeNodes(view.getSelectedNodes().map((n) => n.id))]] : [])
     ]),
     onEdgeContextMenu: (edge, ev) => openMenu(ev, `${edge.source} → ${edge.target}`, [
       ['Fit flow to view', () => view.fitFlow(edge)],
       ['Remove edge', () => update({ ...data, edges: data.edges.filter((e) => e !== edge && !(e.id != null && e.id === edge.id)) })]
     ]),
     onBackgroundContextMenu: (ev) => openMenu(ev, 'Graph', [['Relayout', () => timed(() => view.relayout())], ['Fit to screen', () => view.fit()]])
+  });
+  view.on('selectionchange', ({ nodes, edges }) => {
+    if (nodes.length + edges.length > 1) $('s-msg').textContent = `${nodes.length} nodes and ${edges.length} edges selected · drag one to move them all`;
+  });
+  // undo / redo can bring back earlier data (e.g. a removed node): keep this page's copy in sync
+  view.on('history', ({ action, label, data: d }) => {
+    data = d;
+    $('direction').value = view.options.direction;
+    $('routing').value = view.options.edgeRouting;
+    if (action === 'undo' || action === 'redo') { $('s-msg').textContent = `${action === 'undo' ? 'Undid' : 'Redid'} ${label} · Ctrl+Z / Ctrl+Shift+Z`; stats(); }
   });
   view.on('layout', () => stats());
   view.on('dragend', () => stats());
@@ -72,6 +83,10 @@ function closeMenu() { menu.hidden = true; }
 addEventListener('pointerdown', (e) => { if (!menu.contains(e.target)) closeMenu(); }, true);
 addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 addEventListener('scroll', closeMenu, true);
+function removeNodes(ids) {
+  const gone = new Set(ids);
+  update({ ...data, nodes: data.nodes.filter((n) => !gone.has(n.id)), edges: data.edges.filter((e) => !gone.has(e.source) && !gone.has(e.target)) });
+}
 function update(next) { data = next; timed(() => view.updateGraph(data, { mode: 'stable' })); }
 
 function stats() {

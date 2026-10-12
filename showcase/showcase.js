@@ -25,6 +25,7 @@ for (const ex of EXAMPLES) {
           <button data-act="relayout">Relayout</button>
           <button data-act="fit">Fit</button>
           ${ex.interactive ? '<button data-act="add">Add node</button><button data-act="save">Save</button><button data-act="load" disabled>Load</button>' : ''}
+          ${ex.controls || ''}
         </div>
         <details><summary>Code</summary><pre><code>${esc(ex.code)}</code></pre></details>
         <p class="ex__stats" data-stats>Scroll into view to render…</p>
@@ -49,7 +50,24 @@ function mount(ex, article) {
   const { data, options, className } = ex.make(WORKER_URL);
   if (className) graphEl.classList.add(className);
   const t0 = performance.now();
-  const view = createGraph(graphEl, data, { ...options, onNodeClick: (n, ev, { previous, next }) => { statsEl.textContent = `Clicked "${n.label ?? n.id}" · previous: ${names(previous)} · next: ${names(next)}`; } });
+  const label = (id) => { const n = view.model.nodeById.get(id); return n ? n.label : id; };
+  const view = createGraph(graphEl, data, {
+    ...options,
+    onNodeClick: (n, ev, { previous, next }) => { statsEl.textContent = `Clicked "${n.label ?? n.id}" · previous: ${names(previous)} · next: ${names(next)}`; },
+    onEdgeClick: (e) => { statsEl.textContent = `Clicked line ${label(String(e.source))} → ${label(String(e.target))}${e.label ? ` ("${e.label}")` : ''}`; },
+    // right-click: FlexGraph says what was clicked, this page shows its own menu
+    onNodeContextMenu: (n, ev) => openMenu(ev, n.label ?? n.id, [
+      ['Fit flow to view', () => { view.select(String(n.id)); view.fitFlow(String(n.id)); }],
+      ...(view.options.renderDetails || n.details != null ? [view.isExpanded(n.id) ? ['Hide details', () => view.collapse(n.id)] : ['Show details', () => view.expand(n.id)]] : []),
+      ['Unpin', () => view.unpin(String(n.id))]
+    ]),
+    onEdgeContextMenu: (e, ev) => openMenu(ev, `${label(String(e.source))} → ${label(String(e.target))}`, [
+      ['Fit flow to view', () => view.fitFlow(e)],
+      ['Select source', () => view.select(String(e.source))],
+      ['Select target', () => view.select(String(e.target))]
+    ])
+  });
+  ex.setup?.(view, article);
   const stats = (ms) => {
     const L = view.getLayout();
     statsEl.innerHTML = `<b>${L.nodes.size}</b> nodes · <b>${L.edges.size}</b> edges · <b>${metrics.countCrossings(L.edges)}</b> crossings · ` +
@@ -74,6 +92,7 @@ function mount(ex, article) {
     const write = (v) => { try { v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); return true; } catch { return false; } };
     let current = data, n = 0;
     const loadBtn = $('[data-act=load]', article);
+    view.on('history', ({ data: d }) => { current = d; }); // undo can bring back earlier data
     const restore = async (saved) => {
       current = saved.data;
       n = current.nodes.filter((x) => x.id.startsWith('step')).length;
@@ -100,3 +119,25 @@ function mount(ex, article) {
     if (saved) { loadBtn.disabled = false; view.ready.then(() => restore(saved)); }
   }
 }
+
+// ---- example context menu (page code, not part of FlexGraph) ----
+const menu = document.createElement('ul');
+menu.className = 'menu'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+document.body.append(menu);
+function openMenu(ev, title, items) {
+  menu.innerHTML = '';
+  const t = document.createElement('li'); t.className = 'menu__title'; t.textContent = title; menu.append(t);
+  for (const [text, action] of items) {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.textContent = text; b.setAttribute('role', 'menuitem');
+    b.onclick = () => { menu.hidden = true; action(); };
+    li.append(b); menu.append(li);
+  }
+  menu.hidden = false;
+  menu.style.left = Math.min(ev.clientX, innerWidth - menu.offsetWidth - 8) + 'px';
+  menu.style.top = Math.min(ev.clientY, innerHeight - menu.offsetHeight - 8) + 'px';
+  menu.querySelector('button')?.focus();
+}
+addEventListener('pointerdown', (e) => { if (!menu.contains(e.target)) menu.hidden = true; }, true);
+addEventListener('keydown', (e) => { if (e.key === 'Escape') menu.hidden = true; });
+addEventListener('scroll', () => { menu.hidden = true; }, true);

@@ -2,6 +2,37 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-10-12
+
+### Added
+- Undo / redo (`history`, on by default; `historyLimit` 100): moves (one step per drag, including group drags),
+  pins, `relayout`, `updateGraph`, expand / collapse, `importState` and direction / routing changes. Ctrl/Cmd+Z,
+  Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y, and ↶ ↷ buttons in the controls. `view.undo()`, `redo`, `canUndo`, `canRedo`,
+  `getHistory`, `clearHistory`, `batch(label, fn)` and a `history` event that carries the data now shown.
+- Multi-select (`multiSelect`, on by default): Ctrl/Cmd/Shift + click adds or removes nodes and lines, Shift + drag
+  on the background draws a selection box, Ctrl/Cmd+A selects all and Esc clears. Dragging a selected node moves
+  the whole selection. `view.select([...], { add, toggle })`, `getSelectedItems`, `getSelectedNodes`,
+  `getSelectedEdges`, `selectAll`, `clearSelection`, a `selectionchange` event, `selection` in the `contextmenu`
+  event and `ids` in the drag events. `fitFlow()` without a target fits a multi-selection.
+- Expandable nodes: give a node `details` (HTML) or set `renderDetails(node, el)`, and it gets a "Details" strip at
+  the bottom. Opening it makes room in the layout while the node keeps its place on screen. `view.expand(id)`,
+  `collapse`, `toggleExpand`, `isExpanded`, `onNodeExpand` and an `expand` event.
+- Explore mode for huge hierarchies (`explore: true`): only nodes without a parent are shown at first; clicking a
+  node opens its children, clicking it again closes it. Nodes off the open path are dimmed, blurred or hidden
+  (`exploreUnfocused`), long child lists end in a "+N more" node (`exploreLimit`), a breadcrumb shows the path and
+  badges show child counts. Only the open part of the graph is laid out, so 100 000+ nodes stay fast.
+  `view.setExplorePath(path)`, `getExplorePath`, `exploreBack` (also Escape) and an `explore` event.
+- Fan-out bundling (`bundleFanOut`, default 5): many edges leaving one side of a node share one trunk, like a
+  tree diagram, instead of each taking its own detour.
+
+### Fixed
+- Text was blurry after zooming in: the graph is now only a compositor layer while it moves, so the browser redraws
+  text sharp at the new zoom.
+- Edge labels no longer overlap each other, cover nodes or sit on top of other lines; each label is placed along
+  its own line where there is room.
+- Lines are easier to click and right-click: the hit area stays 14 screen pixels wide when zoomed out.
+- Auto-sized nodes were sometimes 1px too narrow, wrapping their label onto two lines.
+
 ## [1.1.0] — 2026-10-09
 
 ### Added

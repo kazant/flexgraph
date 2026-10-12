@@ -12,7 +12,13 @@ A flexible relationship graph for the browser, with full control over layout and
 - **Track assignment** – parallel segments are spread onto separate tracks, ordered so they don't cross.
 - **Line hops**, rounded corners, arrowheads and ERD markers (crow's foot etc.), edge labels.
 - **Groups** (compound layout – boxes never overlap), **constraints** (pinned, fixed rank, same rank, left-of).
-- **Interaction** – drag (re-routes only affected edges), pin, zoom/pan/pinch, fit, hover highlighting (whole upstream/downstream chain, or direct neighbors with `hoverHighlight: "neighbors"`; a clicked node stays highlighted), selection, save/load state, animated transitions, incremental updates.
+- **Fan-out bundling** – many edges leaving one side of a node share a trunk, like a tree diagram.
+- **Edge labels** placed so they don't overlap each other, nodes or other lines.
+- **Expandable nodes** – a "Details" strip opens your own content; the layout makes room.
+- **Explore mode** for huge hierarchies – start nodes first, click to open children level by level; only what is open is laid out.
+- **Multi-select** – Ctrl/Cmd/Shift + click, Shift + drag selection box, Ctrl+A; drag one selected node to move them all.
+- **Undo / redo** – Ctrl+Z / Ctrl+Shift+Z for moves, pins, relayout, data updates and expand / collapse.
+- **Interaction** – drag (re-routes only affected edges), pin, zoom/pan/pinch (text stays sharp at any zoom), fit, hover highlighting (whole upstream/downstream chain, or direct neighbors with `hoverHighlight: "neighbors"`; a clicked node stays highlighted), selection, save/load state, animated transitions, incremental updates.
 - Layout engine is DOM-free (Node, SSR, Web Worker).
 
 ## Install
@@ -61,7 +67,7 @@ The container needs a size (e.g. `height: 600px`). Nodes without `width`/`height
 
 | Concept | Shape |
 |---|---|
-| Node | `{ id, label?, width?, height?, group?, ports?: [{ id, side, offset? }], constraints?: { pinned, x, y, rank }, className?, type?, html? }` |
+| Node | `{ id, label?, width?, height?, group?, ports?: [{ id, side, offset? }], constraints?: { pinned, x, y, rank }, className?, type?, html?, details?, expandable?, expanded? }` |
 | Edge | `{ id?, source, target, sourcePort?, targetPort?, type?, label?, markerStart?, markerEnd?, minLen?, weight? }` |
 | Group | `{ id, label? }` |
 | Constraints | `{ type: "leftOf", a, b }`, `{ type: "sameRank", nodes: [...] }`, `{ type: "rank", node, rank }` |
@@ -70,7 +76,68 @@ Edge `type` sets the CSS class `fg-edge--<type>` and default markers (`has-many`
 
 ### Events
 
-`view.on(name, cb)` with `layout`, `select`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `animationend`, `contextmenu`.
+`view.on(name, cb)` with `layout`, `history`, `select`, `selectionchange`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `animationend`, `contextmenu`, `expand`, `explore`.
+
+### Undo / redo
+
+Moves (a whole drag is one step), pins, `relayout()`, `updateGraph()`, expand / collapse, `importState()` and direction or routing changes can be undone with Ctrl/Cmd+Z and redone with Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y, or with the ↶ ↷ buttons in the controls. Selection, zoom and explore navigation are not undo steps.
+
+```js
+view.undo(); view.redo();                 // Promise<boolean>
+view.canUndo(); view.getHistory();        // { undo: ["move", "update"], redo: [] }
+view.batch("tidy", () => { view.unpinAll(); return view.relayout(); });   // one step
+
+// undo can bring back earlier data (a removed node, say): keep your copy in sync
+view.on("history", ({ data, canUndo, canRedo }) => { myData = data; });
+```
+
+The data is kept by reference, so pass `updateGraph` a new object instead of editing the old one in place. Turn it off with `history: false`; `historyLimit` (default 100) caps the steps kept.
+
+### Selecting several items
+
+Ctrl/Cmd/Shift + click adds a node or line to the selection (or removes it), Shift + drag on the background draws a selection box, Ctrl/Cmd+A selects every node and Esc clears. Dragging a selected node moves the whole selection. Turn it off with `multiSelect: false`.
+
+```js
+view.select(["a", "b", { kind: "edge", id: "e1" }]);   // also { add: true } or { toggle: true }
+view.getSelectedNodes();                               // the original node objects
+view.on("selectionchange", ({ nodes, edges }) => { /* … */ });
+view.on("contextmenu", ({ node, selection }) => { /* e.g. "Delete 3 selected" */ });
+```
+
+`select` / `getSelection()` keep working as before and report the primary item (the one selected last).
+
+Lines are easy to hit: the click area stays 14 screen pixels wide at any zoom. `onEdgeClick(edge, event)` and `onEdgeContextMenu(edge, event)` work like their node versions.
+
+### Expandable nodes
+
+Give a node `details` (trusted HTML), or set `renderDetails` to give every node a "Details" strip at the bottom. Clicking it opens the node; the layout makes room and the node keeps its place on screen. Details are only built while the node is open.
+
+```js
+createGraph(el, data, {
+  renderDetails: (node) => `<dl><dt>Owner</dt><dd>${node.data.owner}</dd></dl>`,  // or { details: "…" } per node
+  onNodeExpand: (node, expanded) => { /* … */ }
+});
+view.expand("api"); view.collapse("api"); view.toggleExpand("api"); view.isExpanded("api");
+```
+
+Opt a node out with `expandable: false`, or start it open with `expanded: true`. The toggle text is `expandText` / `collapseText`.
+
+### Explore mode (huge hierarchies)
+
+For trees too big to show at once (say 10 start nodes, each with 1 000 children, each with 1 000 more), `explore: true` shows only the nodes without a parent. Clicking a node opens its children; clicking it again closes it. Only the open part of the graph is laid out and rendered.
+
+```js
+createGraph(el, { nodes, edges }, {
+  explore: true,
+  exploreUnfocused: "dim",   // nodes off the open path: "dim" | "blur" | "hide"
+  exploreLimit: 25           // children per node before a "+N more" node (click it for more)
+});
+view.setExplorePath(["region1", "site7"]);   // open a path from code; [] = start nodes only
+view.exploreBack();                          // close the last node (also Escape)
+view.on("explore", ({ path }) => { /* … */ });
+```
+
+A breadcrumb in the top-left corner shows the open path (`exploreBreadcrumb: false` hides it), and each node shows a badge with its number of children.
 
 ### Right-click (context menus)
 
@@ -121,7 +188,7 @@ Written from scratch in plain JavaScript (ES modules, ES2020); not a fork or wra
 - **Layout:** Sugiyama-style layered layout: DFS cycle removal, longest-path ranking with compaction, barycenter/median crossing minimization (as in Graphviz *dot*) with transposition and sifting, isotonic-regression coordinate assignment.
 - **Routing:** A* on a sparse orthogonal grid with bend/crossing penalties, track nudging, line hops.
 - **Browser features:** SVG, CSS custom properties, Pointer Events, `requestAnimationFrame`, optional Web Worker. No network requests, no `eval`.
-- **Size:** about 67 kB minified / 25 kB gzipped (ESM), worker 38 kB.
+- **Size:** about 91 kB minified / 33 kB gzipped (ESM), worker 40 kB.
 - **Tooling:** Node.js 20+, tests with `node --test`.
 
 ## Development

@@ -71,6 +71,46 @@ const classes = [
 
 // ---- 6. Data lineage with constraints ------------------------------------------------------
 
+// ---- 7. Service catalog with details ------------------------------------------------------------
+
+const SERVICES = [
+  ['web', 'Web app', 'Frontend', 'Next.js, served from the edge', '99.98%', 'ok'],
+  ['api', 'API gateway', 'Platform', 'Auth, rate limits, routing', '99.95%', 'ok'],
+  ['orders', 'Orders', 'Commerce', 'Order lifecycle and invoices', '99.90%', 'warn'],
+  ['search', 'Search', 'Discovery', 'Full-text and facets', '99.97%', 'ok'],
+  ['pay', 'Payments', 'Commerce', 'Card and invoice payments', '99.99%', 'ok'],
+  ['db', 'Postgres', 'Platform', 'Primary + 2 replicas', '99.99%', 'ok'],
+  ['queue', 'Queue', 'Platform', 'At-least-once delivery', '99.96%', 'ok']
+];
+
+function serviceDetails(n) {
+  const d = n.data;
+  return `<dl class="svc"><dt>Team</dt><dd>${esc(d.team)}</dd><dt>Uptime</dt><dd>${esc(d.uptime)}</dd>` +
+    `<dt>Status</dt><dd><i class="svc__dot svc__dot--${d.status}"></i>${d.status === 'ok' ? 'Healthy' : 'Degraded'}</dd></dl>` +
+    `<p class="svc__note">${esc(d.about)}</p>`;
+}
+
+// ---- 8. Explore a huge hierarchy -------------------------------------------------------------
+
+// 10 regions x 1000 sites x 10 units = 110 010 nodes. Explore mode only lays out what is open.
+function hugeTree() {
+  const nodes = [], edges = [];
+  for (let r = 0; r < 10; r++) {
+    const rid = 'r' + r;
+    nodes.push({ id: rid, label: 'Region ' + (r + 1) });
+    for (let s = 0; s < 1000; s++) {
+      const sid = rid + 's' + s;
+      nodes.push({ id: sid, label: `Site ${r + 1}.${s + 1}` });
+      edges.push({ source: rid, target: sid });
+      for (let u = 0; u < 10; u++) {
+        nodes.push({ id: sid + 'u' + u, label: `Unit ${s + 1}.${u + 1}` });
+        edges.push({ source: sid, target: sid + 'u' + u });
+      }
+    }
+  }
+  return { nodes, edges };
+}
+
 // ---- exports -------------------------------------------------------------------------------
 
 export const EXAMPLES = [
@@ -231,6 +271,49 @@ createGraph(el, {
 
 el.classList.add("brand-theme");
 createGraph(el, data);`
+  },
+  {
+    id: 'details',
+    title: 'Expandable details',
+    tag: 'Expand / collapse · your own content',
+    text: 'Nodes with details get a "Details" strip at the bottom. Click it to open the node: the layout makes room and the node stays where it is. You decide what the details show.',
+    make: () => ({
+      data: {
+        nodes: SERVICES.map(([id, label, team, about, uptime, status]) => ({ id, label, data: { team, about, uptime, status } })),
+        edges: [['web', 'api'], ['api', 'orders'], ['api', 'search'], ['orders', 'pay'], ['orders', 'db'], ['search', 'db'], ['orders', 'queue'], ['pay', 'queue']]
+          .map(([source, target]) => ({ source, target }))
+      },
+      options: { direction: 'TB', renderDetails: serviceDetails }
+    }),
+    code: `createGraph(el, data, {
+  // every node gets a "Details" toggle; return HTML or an element
+  renderDetails: (node) => \`<dl><dt>Team</dt><dd>\${node.data.team}</dd> …</dl>\`
+});
+
+// or per node: { id: "api", label: "API", details: "<b>Owner:</b> Platform" }
+view.expand("api");            // also collapse(id), toggleExpand(id), isExpanded(id)
+view.on("expand", ({ id, expanded }) => { /* … */ });`
+  },
+  {
+    id: 'explore',
+    title: 'Explore 110 000 nodes',
+    tag: 'Explore mode · drill down level by level',
+    text: '10 regions, each with 1 000 sites, each with 10 units. Explore mode starts with the nodes that have no parent; click one to open its children. What is off the open path is dimmed, blurred or hidden, and long child lists end in a "+N more" node.',
+    controls: '<select data-act="unfocused" aria-label="Nodes off the path"><option value="dim">Dim others</option><option value="blur">Blur others</option><option value="hide">Hide others</option></select>',
+    make: () => ({ data: hugeTree(), options: { explore: true, exploreLimit: 12, direction: 'TB' } }),
+    setup: (view, article) => {
+      const sel = article.querySelector('[data-act=unfocused]');
+      sel.onchange = () => view.setOptions({ exploreUnfocused: sel.value });
+    },
+    code: `createGraph(el, { nodes, edges }, {
+  explore: true,              // start nodes first, click to open children
+  exploreUnfocused: "dim",    // nodes off the open path: "dim" | "blur" | "hide"
+  exploreLimit: 12            // then a "+N more" node
+});
+
+view.setExplorePath(["r1", "r1s4"]);   // open a path from code
+view.exploreBack();                    // or press Escape
+view.on("explore", ({ path }) => { /* … */ });`
   },
   {
     id: 'live',

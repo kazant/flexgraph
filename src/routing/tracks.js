@@ -12,7 +12,7 @@ export function nudgeTracks(paths, rects, o) {
   const orig = new Map();
   for (const [id, p] of paths) orig.set(id, p.points.map((q) => ({ x: q.x, y: q.y })));
   for (const [id, p] of paths) {
-    if (p.kind !== 'orthogonal') continue;
+    if (p.kind !== 'orthogonal' || p.bundle) continue; // bundled edges share their trunk on purpose
     const pts = p.points;
     for (let i = 0; i < pts.length - 1; i++) {
       if (o.fixedEnds !== false && (i === 0 || i === pts.length - 2)) continue;

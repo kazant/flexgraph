@@ -40,6 +40,12 @@ export interface NodeSpec {
   type?: string;
   /** Trusted HTML content for the default node template. */
   html?: string;
+  /** Trusted HTML shown when the node is expanded. A node with details gets a "Details" toggle. */
+  details?: string;
+  /** Force the details toggle on or off (default: on when `details` or options.renderDetails is set). */
+  expandable?: boolean;
+  /** Start with the details open. */
+  expanded?: boolean;
   [key: string]: unknown;
 }
 
@@ -93,6 +99,8 @@ export interface GraphOptions {
   maxIterations: number;
   bendPenalty: number;
   crossingPenalty: number;
+  /** When this many edges leave one side of a node, they share one trunk (tree style). 0 turns it off. Default 5. */
+  bundleFanOut: number;
   defaultNodeWidth: number;
   defaultNodeHeight: number;
   pinOnDrag: boolean;
@@ -107,11 +115,44 @@ export interface GraphOptions {
   hoverHighlight: 'chain' | 'neighbors';
   /** Keep the hover highlight on the selected (clicked) node or edge until the selection is cleared. Default true. */
   highlightSelection: boolean;
+  /**
+   * Multi-select (default true): Ctrl/Cmd/Shift + click adds or removes items, Shift + drag on the background draws a
+   * selection box, Ctrl/Cmd+A selects all, and dragging a selected node moves the whole selection.
+   */
+  multiSelect: boolean;
+  /**
+   * Undo / redo (default true) for moves, pins, relayout, updateGraph, expand / collapse, importState and direction /
+   * routing changes. Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y, and buttons in the controls.
+   */
+  history: boolean;
+  /** Undo steps kept. Default 100. */
+  historyLimit: number;
+  /** Text of the details toggle on expandable nodes. Defaults 'Details' / 'Hide'. */
+  expandText: string;
+  collapseText: string;
+  /**
+   * Explore mode for huge hierarchies: only nodes without a parent are shown at first; clicking a node opens its
+   * children. Only the open part of the graph is laid out and rendered.
+   */
+  explore: boolean;
+  /** Explore mode: nodes off the open path are 'dim' (default), 'blur' or 'hide'. */
+  exploreUnfocused: 'dim' | 'blur' | 'hide';
+  /** Explore mode: children shown per node before a "+N more" node (click it to show more). Default 25. */
+  exploreLimit: number;
+  /** Explore mode: show the path as a breadcrumb in the top-left corner. Default true. */
+  exploreBreadcrumb: boolean;
+  /** Explore mode: first breadcrumb item (back to the start nodes). Default 'Start'. */
+  exploreStartText: string;
+  /** Explore mode: label of the "+N more" node. */
+  exploreMoreText?: (count: number) => string;
   edgeTypes: Record<string, { markerStart?: MarkerName | null; markerEnd?: MarkerName | null }>;
   /** URL of dist/flexgraph.worker.js to run layout + routing in a Web Worker. */
   worker?: string | URL;
   /** Custom node content. Return an HTML string, an element, or nothing (to fill `el` yourself). */
   renderNode?: (node: NodeSpec, el: HTMLElement) => string | Node | void | null;
+  /** Content of an expanded node. When set, every node gets a "Details" toggle (opt out per node with expandable: false). */
+  renderDetails?: (node: NodeSpec, el: HTMLElement) => string | Node | void | null;
+  onNodeExpand?: (node: NodeSpec, expanded: boolean) => void;
   /** `connections.previous` / `connections.next`: the nodes directly before and after the clicked node. */
   onNodeClick?: (node: NodeSpec, event: PointerEvent, connections: Connections) => void;
   onEdgeClick?: (edge: EdgeSpec, event: PointerEvent) => void;
@@ -143,19 +184,30 @@ export interface GraphEvents {
   nodeclick: { node: NodeSpec; event: PointerEvent; previous: NodeSpec[]; next: NodeSpec[] };
   edgeclick: { edge: EdgeSpec; event: PointerEvent };
   groupclick: { group: GroupSpec; event: PointerEvent };
-  dragstart: { id: string };
-  drag: { id: string; x: number; y: number };
-  dragend: { id: string; x: number; y: number };
+  /** `ids`: every node being moved (the whole selection when a selected node is dragged). */
+  dragstart: { id: string; ids: string[] };
+  drag: { id: string; x: number; y: number; ids: string[] };
+  dragend: { id: string; x: number; y: number; ids: string[] };
+  /**
+   * Undo history changed. `data` is the graph data now shown: after an undo it can be an earlier object than the
+   * one you last passed to updateGraph, so keep your own copy in sync from here.
+   */
+  history: { action: 'record' | 'undo' | 'redo' | 'clear'; label?: string; canUndo: boolean; canRedo: boolean; data: GraphData };
+  /** The set of selected items changed (`select` only reports the primary item). */
+  selectionchange: { items: Selection[]; nodes: NodeSpec[]; edges: EdgeSpec[] };
   pin: { id: string; pinned: boolean };
   change: ViewState;
   viewport: { x: number; y: number; k: number };
   animationend: void;
+  expand: { id: string; expanded: boolean; node: NodeSpec };
+  /** Explore mode: the open path changed. */
+  explore: { path: string[] };
   /** Right-click anywhere in the graph. Registering a listener suppresses the browser menu inside the graph. */
   contextmenu:
-    | { kind: 'node'; id: string; node: NodeSpec; previous: NodeSpec[]; next: NodeSpec[]; event: MouseEvent }
-    | { kind: 'edge'; id: string; edge: EdgeSpec; event: MouseEvent }
-    | { kind: 'group'; id: string; group: GroupSpec; event: MouseEvent }
-    | { kind: 'background'; event: MouseEvent };
+    | { kind: 'node'; id: string; node: NodeSpec; previous: NodeSpec[]; next: NodeSpec[]; event: MouseEvent; selection: Selection[] }
+    | { kind: 'edge'; id: string; edge: EdgeSpec; event: MouseEvent; selection: Selection[] }
+    | { kind: 'group'; id: string; group: GroupSpec; event: MouseEvent; selection: Selection[] }
+    | { kind: 'background'; event: MouseEvent; selection: Selection[] };
 }
 
 export interface Connections {
@@ -187,18 +239,51 @@ export interface GraphView {
   pin(id: string, pinned?: boolean): void;
   unpin(id: string): void;
   unpinAll(): void;
-  select(sel: string | Selection | null): void;
+  /**
+   * Select one item, several, or nothing. Node ids can be passed as strings.
+   * `add` adds to the current selection, `toggle` flips each item in or out of it.
+   */
+  select(sel: string | Selection | (string | Selection)[] | null, opts?: { add?: boolean; toggle?: boolean }): void;
+  /** The primary selected item (the one selected last), or null. */
   getSelection(): Selection | null;
+  /** Every selected item, in the order they were selected. */
+  getSelectedItems(): Selection[];
+  getSelectedNodes(): NodeSpec[];
+  getSelectedEdges(): EdgeSpec[];
+  selectAll(): void;
+  clearSelection(): void;
+  /** Undo the last change. Resolves false if there was nothing to undo. */
+  undo(): Promise<boolean>;
+  redo(): Promise<boolean>;
+  canUndo(): boolean;
+  canRedo(): boolean;
+  /** Labels of the undo / redo steps, oldest first ("move", "pin", "update", "relayout", "expand", …). */
+  getHistory(): { undo: string[]; redo: string[] };
+  clearHistory(): void;
+  /** Run several changes as one undo step. Returns what fn returns. */
+  batch<T>(label: string, fn: () => T): T;
   /** Previous / next nodes of a node (direct, or the whole chain with { chain: true }). null if the id is unknown. */
   getConnections(id: string, opts?: { chain?: boolean }): Connections | null;
   fit(opts?: { padding?: number; maxZoom?: number }): void;
   /**
    * Zoom and pan so the whole flow through a node or edge (everything upstream and downstream) fills the view,
-   * as large as possible. Defaults to the selected node or edge. Returns false if there is nothing to fit.
+   * as large as possible. Defaults to the selected node or edge (with several selected: fits the selection).
+   * Returns false if there is nothing to fit.
    */
   fitFlow(target?: string | Selection | EdgeSpec, opts?: FitOptions & { mode?: 'chain' | 'neighbors' }): boolean;
   /** Zoom and pan so the given nodes and the edges between them fill the view, as large as possible. */
   fitNodes(ids: Iterable<string>, opts?: FitOptions): boolean;
+  /** Open (or close) a node's details. The layout makes room; the node keeps its place on screen. */
+  expand(id: string, expanded?: boolean): Promise<boolean>;
+  collapse(id: string): Promise<boolean>;
+  toggleExpand(id: string): Promise<boolean>;
+  isExpanded(id: string): boolean;
+  /** Explore mode: the open nodes, from a start node down. */
+  getExplorePath(): string[];
+  /** Explore mode: open a path (each id a child of the one before). [] shows only the start nodes. */
+  setExplorePath(path: string[], opts?: { animate?: boolean }): Promise<GraphView>;
+  /** Explore mode: close the last open node (also Escape). */
+  exploreBack(): Promise<GraphView>;
   zoomBy(factor: number): void;
   zoomTo(k: number): void;
   zoomAt(k: number, clientX: number, clientY: number): void;
@@ -212,7 +297,7 @@ export interface GraphView {
 
 export function createGraph(container: HTMLElement | string, data: GraphData, options?: Partial<GraphOptions>): GraphView;
 
-export interface RoutedPath { points: Point[]; kind: EdgeRouting; sourceSide: Side; targetSide: Side; hops: { seg: number; x: number; y: number }[]; }
+export interface RoutedPath { points: Point[]; kind: EdgeRouting; sourceSide: Side; targetSide: Side; hops: { seg: number; x: number; y: number }[]; /** Set on edges that share a fan-out trunk. */ bundle?: string; }
 export interface LayoutResult {
   nodes: Map<string, Rect & { rank: number; order: number }>;
   edges: Map<string, { waypoints: Point[]; reversed: boolean; selfLoop: boolean; flat: boolean }>;

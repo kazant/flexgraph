@@ -1,7 +1,7 @@
 // Edge routing: orthogonal A* with obstacle avoidance, plus straight / curved modes.
 // Pure — operates on rectangles and returns point lists.
 
-import { NORMALS, expand, strictlyInside, boundaryPoint, simplify, center } from './geometry.js';
+import { NORMALS, expand, strictlyInside, boundaryPoint, simplify, center, segmentHitsRect } from './geometry.js';
 import { assignPorts } from './ports.js';
 import { nudgeTracks } from './tracks.js';
 import { computeHops } from './hops.js';
@@ -118,8 +118,10 @@ function routeOrthogonal(model, rects, ends, o, only, prev, paths, raw) {
     return st ? Math.abs(st.s.x - st.t.x) + Math.abs(st.s.y - st.t.y) : 0;
   };
   todo.sort((a, b) => dist(a) - dist(b));
+  routeBundles(model, rects, ends, o, obstacles, todo, grid, paths, raw);
 
   for (const e of todo) {
+    if (paths.has(e.id)) continue;
     if (e.source === e.target) {
       const loop = selfLoop(rects.get(e.source), o, ends.get(e.id));
       paths.set(e.id, loop); raw.set(e.id, loop.points);
@@ -134,6 +136,58 @@ function routeOrthogonal(model, rects, ends, o, only, prev, paths, raw) {
     grid.markPath(pts);
     raw.set(e.id, pts);
     paths.set(e.id, { points: pts.map((p) => ({ ...p })), kind: 'orthogonal', sourceSide: end.source.side, targetSide: end.target.side });
+  }
+}
+
+const OPPOSITE = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
+
+/**
+ * Fan-out bundles: when many edges leave one side of a node towards nodes further out on that side, they
+ * share one trunk and branch off a common channel, like a tree diagram. Routed one by one they would each
+ * take their own detour and tangle. A group is only bundled if no branch passes through another node.
+ */
+function routeBundles(model, rects, ends, o, obstacles, todo, grid, paths, raw) {
+  const min = o.bundleFanOut;
+  if (!min) return;
+  const groups = new Map();
+  for (const e of todo) {
+    // explicit ports and start markers (crow's feet etc.) must keep their own attachment point
+    if (e.source === e.target || e.sourcePort || e.markerStart) continue;
+    const end = ends.get(e.id);
+    if (!end || !end.source || !end.target || end.target.side !== OPPOSITE[end.source.side]) continue;
+    const key = e.source + '|' + end.source.side;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(e);
+  }
+  for (const [key, list] of groups) {
+    if (list.length < min) continue;
+    const id = list[0].source, side = ends.get(list[0].id).source.side;
+    const r = rects.get(id), n = NORMALS[side];
+    const vertical = n.y !== 0;
+    const sign = vertical ? n.y : n.x;
+    const sidePos = side === 'bottom' ? r.y + r.height : side === 'top' ? r.y : side === 'right' ? r.x + r.width : r.x;
+    let gap = Infinity;
+    for (const e of list) { const t = ends.get(e.id).target; gap = Math.min(gap, ((vertical ? t.y : t.x) - sidePos) * sign); }
+    if (gap < 2 * o.nodeMargin + 4) continue; // targets not clearly beyond the side
+    const ch = sidePos + (sign * gap) / 2;
+    const s = vertical ? { x: r.x + r.width / 2, y: sidePos } : { x: sidePos, y: r.y + r.height / 2 };
+    const routes = [];
+    let ok = true;
+    for (const e of list) {
+      const t = ends.get(e.id).target;
+      const pts = simplify(vertical ? [s, { x: s.x, y: ch }, { x: t.x, y: ch }, t] : [s, { x: ch, y: s.y }, { x: ch, y: t.y }, t]);
+      for (let i = 0; ok && i < pts.length - 1; i++) {
+        for (const ob of obstacles) if (ob.id !== id && ob.id !== e.target && segmentHitsRect(pts[i], pts[i + 1], ob, 1)) { ok = false; break; }
+      }
+      if (!ok) break;
+      routes.push([e, pts, t.side]);
+    }
+    if (!ok) continue;
+    for (const [e, pts, tSide] of routes) {
+      grid.markPath(pts);
+      raw.set(e.id, pts);
+      paths.set(e.id, { points: pts.map((p) => ({ ...p })), kind: 'orthogonal', sourceSide: side, targetSide: tSide, bundle: key });
+    }
   }
 }
 

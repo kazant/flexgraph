@@ -23,6 +23,7 @@ export const DEFAULT_OPTIONS = Object.freeze({
   maxIterations: 24,       // crossing-minimization iteration cap
   bendPenalty: 24,
   crossingPenalty: 120,
+  bundleFanOut: 5,         // this many edges leaving one side of a node share a trunk (tree style); 0 = off
   defaultNodeWidth: 160,
   defaultNodeHeight: 60,
   pinOnDrag: true,
@@ -35,6 +36,17 @@ export const DEFAULT_OPTIONS = Object.freeze({
   showPorts: true,
   hoverHighlight: 'chain', // 'chain' (whole upstream + downstream path) or 'neighbors'
   highlightSelection: true, // keep the highlight on the selected (clicked) node or edge
+  multiSelect: true,       // Ctrl/Cmd/Shift + click, Shift + drag (selection box), Ctrl+A; drag moves the selection
+  history: true,          // undo / redo (Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y) for moves, pins, relayout, updateGraph, expand
+  historyLimit: 100,
+  expandText: 'Details',   // toggle text on nodes with details (node.details / renderDetails)
+  collapseText: 'Hide',
+  explore: false,          // explore mode: start nodes first, click a node to open its children
+  exploreUnfocused: 'dim', // what happens to nodes off the opened path: 'dim', 'blur' or 'hide'
+  exploreLimit: 25,        // children shown per node before a "+N more" node
+  exploreBreadcrumb: true,
+  exploreStartText: 'Start',
+  exploreMoreText: undefined, // (count) => label of the "+N more" node
   edgeTypes: {
     default: { markerEnd: 'arrow' },
     'has-many': { markerStart: 'one', markerEnd: 'many' },

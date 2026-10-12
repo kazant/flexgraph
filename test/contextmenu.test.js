@@ -11,7 +11,7 @@ function fakeView(options = {}) {
     edges: [{ id: 'e1', source: 'a', target: 'b' }]
   });
   const v = Object.create(GraphView.prototype);
-  Object.assign(v, { model, options, _listeners: new Map() });
+  Object.assign(v, { model, options, _listeners: new Map(), _sel: new Map() });
   return v;
 }
 const fakeEvent = () => ({ defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } });

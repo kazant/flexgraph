@@ -47,7 +47,10 @@ export function attachInteraction(view) {
     }
     const tgt = targetOf(ev);
     const start = { x: ev.clientX, y: ev.clientY };
-    if (tgt.kind === 'node' && o().draggable) {
+    if ((tgt.kind === 'background' || tgt.kind === 'group') && ev.shiftKey && o().multiSelect) {
+      // Shift + drag on the background: selection box (adds to the current selection)
+      gesture = { type: 'box', target: tgt, start, moved: false, base: view.getSelectedItems() };
+    } else if (tgt.kind === 'node' && o().draggable) {
       const rect = view.positions.get(tgt.id);
       const w = toWorld(ev.clientX, ev.clientY);
       gesture = { type: 'drag', id: tgt.id, target: tgt, start, moved: false, dx: w.x - rect.x, dy: w.y - rect.y };
@@ -74,6 +77,17 @@ export function attachInteraction(view) {
       gesture.moved = true;
       if (gesture.type === 'drag') { view._dragStart(gesture.id); vp.classList.add('fg-dragging'); }
       if (gesture.type === 'pan') vp.classList.add('fg-panning');
+      if (gesture.type === 'box') { gesture.el = document.createElement('div'); gesture.el.className = 'fg-selection-box'; vp.appendChild(gesture.el); }
+    }
+    if (gesture.type === 'box') {
+      const b = vp.getBoundingClientRect();
+      const x0 = Math.min(gesture.start.x, ev.clientX), y0 = Math.min(gesture.start.y, ev.clientY);
+      const w = Math.abs(ev.clientX - gesture.start.x), h = Math.abs(ev.clientY - gesture.start.y);
+      Object.assign(gesture.el.style, { left: x0 - b.left + 'px', top: y0 - b.top + 'px', width: w + 'px', height: h + 'px' });
+      const a = toWorld(x0, y0), c = toWorld(x0 + w, y0 + h);
+      pending = { box: { x: a.x, y: a.y, width: c.x - a.x, height: c.y - a.y }, base: gesture.base };
+      if (!raf) raf = requestAnimationFrame(flush);
+      return;
     }
     if (gesture.type === 'pan') {
       view.setTransform({ x: gesture.tx + ev.clientX - gesture.start.x, y: gesture.ty + ev.clientY - gesture.start.y, k: r.transform.k });
@@ -86,7 +100,7 @@ export function attachInteraction(view) {
 
   function flush() {
     raf = 0;
-    if (pending) { const p = pending; pending = null; view._dragMove(p.id, p.x, p.y); }
+    if (pending) { const p = pending; pending = null; if (p.box) view._boxSelect(p.box, p.base); else view._dragMove(p.id, p.x, p.y); }
   }
 
   function onPointerUp(ev) {
@@ -96,6 +110,11 @@ export function attachInteraction(view) {
     if (g.type === 'pinch') { if (pointers.size === 0) gesture = null; return; }
     gesture = null;
     vp.classList.remove('fg-dragging', 'fg-panning');
+    if (g.type === 'box' && g.moved) {
+      if (raf) { cancelAnimationFrame(raf); raf = 0; flush(); }
+      g.el.remove();
+      return;
+    }
     if (g.type === 'drag' && g.moved) {
       if (raf) { cancelAnimationFrame(raf); raf = 0; flush(); }
       view._dragEnd(g.id);
@@ -126,10 +145,20 @@ export function attachInteraction(view) {
     if (ev.target.closest && ev.target.closest('.fg-controls, input, textarea, select, a')) return;
     view._contextMenu(targetOf(ev), ev);
   }
+  // the details toggle on expandable nodes (a button, so pointerdown above ignores it: no drag, no select)
+  function onClick(ev) {
+    const btn = ev.target.closest && ev.target.closest('.fg-node__toggle');
+    if (!btn) return;
+    const node = btn.closest('.fg-node');
+    if (node && r.nodesLayer.contains(node)) { ev.stopPropagation(); view.toggleExpand(node.dataset.id); }
+  }
   function onLeave() { if (hoverId) { hoverId = null; view._hover(null); } }
 
   function onKey(ev) {
-    if (ev.key === 'Escape') view.select(null);
+    if (ev.key === 'Escape') view._escape();
+    else if ((ev.key === 'z' || ev.key === 'Z') && (ev.ctrlKey || ev.metaKey) && o().history) { ev.preventDefault(); ev.shiftKey ? view.redo() : view.undo(); }
+    else if ((ev.key === 'y' || ev.key === 'Y') && (ev.ctrlKey || ev.metaKey) && o().history) { ev.preventDefault(); view.redo(); }
+    else if ((ev.key === 'a' || ev.key === 'A') && (ev.ctrlKey || ev.metaKey) && o().multiSelect) { ev.preventDefault(); view.selectAll(); }
     else if ((ev.key === '+' || ev.key === '=') && o().zoomable) view.zoomBy(1.2);
     else if (ev.key === '-' && o().zoomable) view.zoomBy(1 / 1.2);
     else if (ev.key === '0') view.fit();
@@ -142,6 +171,7 @@ export function attachInteraction(view) {
   vp.addEventListener('wheel', onWheel, { passive: false });
   vp.addEventListener('pointerover', onOver);
   vp.addEventListener('contextmenu', onContextMenu);
+  vp.addEventListener('click', onClick);
   vp.addEventListener('pointerleave', onLeave);
   vp.addEventListener('keydown', onKey);
   return () => {
@@ -152,6 +182,7 @@ export function attachInteraction(view) {
     vp.removeEventListener('wheel', onWheel);
     vp.removeEventListener('pointerover', onOver);
     vp.removeEventListener('contextmenu', onContextMenu);
+    vp.removeEventListener('click', onClick);
     vp.removeEventListener('pointerleave', onLeave);
     vp.removeEventListener('keydown', onKey);
     if (raf) cancelAnimationFrame(raf);

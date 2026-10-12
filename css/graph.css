@@ -58,7 +58,9 @@
   cursor: grab;
 }
 .fg-viewport.fg-panning { cursor: grabbing; }
-.fg-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.fg-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+/* a compositor layer only while panning/zooming: once the view settles text is redrawn sharp at the new zoom */
+.fg-world.fg-moving { will-change: transform; }
 
 /* layers */
 .fg-groups, .fg-labels, .fg-nodes { position: absolute; left: 0; top: 0; }
@@ -84,6 +86,8 @@
 }
 .fg-node__label { text-align: center; overflow: hidden; text-overflow: ellipsis; }
 .fg-node--measuring { width: max-content !important; height: auto !important; max-width: 320px; visibility: hidden; }
+.fg-node--measuring-h { height: auto !important; visibility: hidden; }
+.fg-node--expanded.fg-node--measuring { max-width: 420px; }
 .fg-node:hover { border-color: var(--fg-accent); }
 .fg-node.fg-selected { border-color: var(--fg-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fg-accent) 25%, transparent), var(--fg-node-shadow); }
 .fg-node--dragging { cursor: grabbing; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18); z-index: 2; }
@@ -143,7 +147,8 @@
   stroke-linecap: round;
   transition: stroke 0.15s, opacity 0.15s;
 }
-.fg-edge__hit { fill: none; stroke: transparent; stroke-width: 12px; pointer-events: stroke; cursor: pointer; }
+/* the hit area stays 14 screen pixels wide at any zoom, so lines are easy to click when zoomed out */
+.fg-edge__hit { fill: none; stroke: transparent; stroke-width: max(12px, calc(14px / var(--fg-zoom, 1))); pointer-events: stroke; cursor: pointer; }
 .fg-edge:hover .fg-edge__line, .fg-edge.fg-selected .fg-edge__line { stroke: var(--fg-edge-active); stroke-width: 2.25px; }
 .fg-edge--dependency .fg-edge__line, .fg-edge--association .fg-edge__line { stroke-dasharray: 6 4; }
 
@@ -167,12 +172,121 @@
   cursor: pointer;
 }
 
+/* expandable nodes: a full-width "Details" strip at the bottom opens the user's details */
+.fg-node--expandable { flex-direction: column; align-items: stretch; padding: 0; }
+.fg-node__body { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 8px 12px; }
+.fg-node__details {
+  padding: 8px 12px;
+  border-top: 1px solid var(--fg-node-border);
+  font-size: 12px;
+  text-align: left;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: auto;
+}
+.fg-node__toggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 12px;
+  border: 0;
+  border-top: 1px solid var(--fg-node-border);
+  background: color-mix(in srgb, var(--fg-node-border) 18%, var(--fg-node-bg));
+  color: var(--fg-group-text);
+  font: 600 11px/16px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.02em;
+  border-radius: 0 0 calc(var(--fg-node-radius) - 1px) calc(var(--fg-node-radius) - 1px);
+  cursor: pointer;
+}
+.fg-node__toggle:hover, .fg-node__toggle:focus-visible { color: var(--fg-accent); background: color-mix(in srgb, var(--fg-accent) 10%, var(--fg-node-bg)); outline: none; }
+.fg-node__toggle svg { transition: transform 0.15s; }
+.fg-node__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* explore mode */
+.fg-node__badge {
+  position: absolute;
+  right: -9px;
+  top: 50%;
+  min-width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  border: 1px solid var(--fg-node-border);
+  background: var(--fg-node-bg);
+  color: var(--fg-group-text);
+  font: 600 10px/16px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+/* the badge sits on the side the children are on */
+.fg-explore[data-fg-direction="TB"] .fg-node__badge { top: auto; bottom: -9px; margin-top: 0; }
+.fg-explore[data-fg-direction="BT"] .fg-node__badge { top: -9px; margin-top: 0; }
+.fg-explore[data-fg-direction="RL"] .fg-node__badge { right: auto; left: -9px; }
+.fg-node__badge--open { background: var(--fg-accent); border-color: var(--fg-accent); color: #fff; }
+.fg-node--more { white-space: nowrap; border-style: dashed; color: var(--fg-group-text); font-weight: 600; box-shadow: none; }
+.fg-edge--more .fg-edge__line { stroke-dasharray: 3 4; }
+.fg-explore .fg-node { animation: fg-appear 0.25s ease-out; }
+@keyframes fg-appear { from { opacity: 0; } }
+.fg-node.fg-unfocused, .fg-edge-label.fg-unfocused { opacity: var(--fg-dim-opacity); }
+.fg-edge.fg-unfocused .fg-edge__line { opacity: var(--fg-dim-opacity); }
+.fg-explore--blur .fg-node.fg-unfocused, .fg-explore--blur .fg-edge-label.fg-unfocused { filter: blur(1.5px); opacity: 0.55; }
+.fg-explore--blur .fg-node.fg-unfocused:hover { filter: none; opacity: 1; }
+.fg-breadcrumb {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  right: 60px;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: calc(100% - 72px);
+  padding: 3px;
+  border: 1px solid var(--fg-node-border);
+  border-radius: 8px;
+  background: var(--fg-node-bg);
+  box-shadow: var(--fg-node-shadow);
+  font-size: 12px;
+}
+.fg-breadcrumb button {
+  max-width: 180px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--fg-group-text);
+  font: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.fg-breadcrumb button:hover { background: color-mix(in srgb, var(--fg-accent) 10%, transparent); color: var(--fg-accent); }
+.fg-breadcrumb button[aria-current] { color: var(--fg-node-text); font-weight: 600; }
+.fg-breadcrumb__sep { color: var(--fg-group-text); opacity: 0.6; }
+
 /* hover highlighting */
 .fg-hovering .fg-node:not(.fg-hl),
 .fg-hovering .fg-edge-label:not(.fg-hl) { opacity: var(--fg-dim-opacity); }
 .fg-hovering .fg-edge:not(.fg-hl) .fg-edge__line { opacity: var(--fg-dim-opacity); }
 .fg-hovering .fg-edge.fg-hl .fg-edge__line { stroke: var(--fg-edge-active); stroke-width: 2.25px; }
 .fg-dragging .fg-world { cursor: grabbing; }
+
+/* multi-select: Shift + drag on the background draws this box */
+.fg-selection-box {
+  position: absolute;
+  z-index: 15;
+  border: 1px solid var(--fg-accent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--fg-accent) 10%, transparent);
+  pointer-events: none;
+}
 
 /* controls */
 .fg-controls {
@@ -195,8 +309,11 @@
   cursor: pointer;
   box-shadow: var(--fg-node-shadow);
 }
-.fg-controls button:hover { border-color: var(--fg-accent); color: var(--fg-accent); }
+.fg-controls button:hover:not(:disabled) { border-color: var(--fg-accent); color: var(--fg-accent); }
+.fg-controls button:disabled { opacity: 0.4; cursor: default; }
+.fg-controls__undo { margin-top: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fg-node, .fg-edge__line { transition: none; }
+  .fg-node, .fg-edge__line, .fg-node__toggle svg { transition: none; }
+  .fg-explore .fg-node { animation: none; }
 }

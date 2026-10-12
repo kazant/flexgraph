@@ -13,7 +13,7 @@ function fakeView(vw = 1000, vh = 600) {
   const v = Object.create(GraphView.prototype);
   let transform = { x: 0, y: 0, k: 1 };
   Object.assign(v, {
-    model, routing, selected: null,
+    model, routing, selected: null, _sel: new Map(),
     positions: new Map([...layout.nodes].map(([id, r]) => [id, { x: r.x, y: r.y, width: r.width, height: r.height }])),
     options: { ...model.options, minZoom: 0.1, maxZoom: 4, animate: false },
     renderer: { viewport: { clientWidth: vw, clientHeight: vh } },
