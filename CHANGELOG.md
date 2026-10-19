@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.3.0] — 2026-10-19
 
 ### Added
 - Stacking (animated fold / unfold): `stackable: "upstream" | "downstream"` and `stacked` node options, `view.stack(id)`,
