@@ -1,7 +1,7 @@
 // Showcase examples. Each example returns { data, options } for createGraph(),
 // plus a short code snippet shown next to the live graph. All data is made up.
 
-import { erd, grouped, large } from '../demo/samples.js';
+import { erd, grouped, large, stacking } from '../demo/samples.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -293,6 +293,43 @@ createGraph(el, data);`
 // or per node: { id: "api", label: "API", details: "<b>Owner:</b> Platform" }
 view.expand("api");            // also collapse(id), toggleExpand(id), isExpanded(id)
 view.on("expand", ({ id, expanded }) => { /* … */ });`
+  },
+  {
+    id: 'stacking',
+    title: 'Stacking',
+    tag: 'Animated fold / unfold · nodes come out from underneath',
+    text: 'Click the round − on "Contract signed": its whole history slides in underneath it and becomes a card stack with a "+6" button. "Delivery" folds the steps after it. Select a node and press Add children: the new nodes come out from underneath it.',
+    controls: '<button type="button" data-act="add-children">Add children</button> <button type="button" data-act="unstack-all">Unstack all</button>',
+    make: () => ({ data: stacking(), options: { direction: 'LR' } }),
+    setup: (view, article) => {
+      let n = 0;
+      article.querySelector('[data-act=add-children]').onclick = () => {
+        const sel = view.getSelectedNodes()[0];
+        const from = String(sel ? sel.id : 'golive');
+        const nodes = [], edges = [];
+        for (let i = 0; i < 3; i++) { const id = 'new' + ++n; nodes.push({ id, label: 'New step ' + n, width: 120, height: 44 }); edges.push({ id: from + '-' + id, source: from, target: id }); }
+        view.addNodes({ nodes, edges }, { from }).then(() => view.fitNodes([...view.getLayout().nodes.keys()]));
+      };
+      article.querySelector('[data-act=unstack-all]').onclick = () => view.unstackAll();
+    },
+    code: `const data = {
+  nodes: [
+    { id: "signed", label: "Contract signed", stackable: "upstream" },   // can fold its history
+    { id: "delivery", label: "Delivery", stackable: "downstream" },      // can fold what comes after
+    // …  (stacked: true starts a node folded)
+  ],
+  edges: [ /* … */ ]
+};
+const view = createGraph(el, data);
+
+view.stack("signed");      // previous nodes slide in underneath; the node shows "+6"
+view.unstack("signed");    // they come back out from underneath
+view.toggleStack("delivery"); view.isStacked("delivery"); view.getStacked("delivery");
+
+// new nodes come out from underneath "golive"; removed nodes slide into "c"
+view.addNodes({ nodes: [...], edges: [...] }, { from: "golive" });
+view.removeNodes(["a", "b"], { to: "c" });
+view.on("stack", ({ id, stacked }) => { /* … */ });`
   },
   {
     id: 'explore',

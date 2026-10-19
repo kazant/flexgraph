@@ -55,7 +55,8 @@ const view = createGraph(document.getElementById("graph"), data, { direction: "L
   <h3>Data</h3>
   <pre>{
   nodes:  [{ id, label, width?, height?, group?, ports?: [{ id, side: "top|right|bottom|left", offset? }],
-             constraints?: { pinned, x, y, rank }, details?, expandable?, expanded? }],
+             constraints?: { pinned, x, y, rank }, details?, expandable?, expanded?,
+             stackable?: "upstream" | "downstream", stacked? }],
   edges:  [{ id, source, target, sourcePort?, targetPort?, type?, label?, markerStart?, markerEnd? }],
   groups: [{ id, label }],
   constraints: [{ type: "leftOf", a, b }, { type: "sameRank", nodes: [...] }]
@@ -101,7 +102,19 @@ view.on("history", ({ data, canUndo, canRedo }) => …)   // after undo, data ma
 view.expand(id) / view.collapse(id) / view.toggleExpand(id) / view.isExpanded(id)
 view.setExplorePath(["a", "b"]) / view.getExplorePath() / view.exploreBack()   // explore mode
 view.on("expand", ({ id, expanded }) => …)
+view.stack(id) / view.unstack(id) / view.toggleStack(id) / view.unstackAll()   // animated fold / unfold
+view.isStacked(id) / view.getStacked(id)
+view.addNodes({ nodes, edges }, { from: id })   // new nodes come out from underneath a node
+view.removeNodes(ids, { to: id })               // removed nodes slide into a node
+view.on("stack", ({ id, direction, stacked }) => …) / view.on("unstack", ({ id }) => …)
 view.on("explore", ({ path }) => …)</pre>
+  <h3>Stacking</h3>
+  <p>A node with <code>stackable: "upstream"</code> gets a round <b>−</b> button that folds every node leading into it underneath itself, with an animation; the node then shows a card stack and a <b>+N</b> button that brings them back out. <code>stackable: "downstream"</code> (or <code>true</code>) does the same for the nodes after it. Nodes that also connect elsewhere stay visible, and their lines are drawn dashed to the stack. The node you click keeps its place on screen. Stacking is part of undo / redo and of <code>exportState()</code>. <a href="../showcase/#stacking">See it in the showcase</a>.</p>
+  <pre>{ id: "signed", label: "Contract signed", stackable: "upstream" }        // fold its history
+{ id: "delivery", label: "Delivery", stackable: "downstream", stacked: true } // start folded
+
+view.stack("signed"); view.unstack("signed");
+view.addNodes({ nodes: [...], edges: [...] }, { from: "golive" });   // they come out from underneath "golive"</pre>
   <h3>Saving a layout</h3>
   <p>Users can drag nodes until the lines run the way they want. <code>exportState()</code> returns plain JSON with the node positions, pins, zoom and the exact edge lines. Store it anywhere (your database, <code>localStorage</code>, a file) and pass it to <code>importState()</code> to recreate the same picture. If a node has changed size since it was saved (other fonts, edited labels), the lines on that node are routed fresh instead.</p>
   <pre>// save
