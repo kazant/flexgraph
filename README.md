@@ -76,7 +76,7 @@ Edge `type` sets the CSS class `fg-edge--<type>` and default markers (`has-many`
 
 ### Events
 
-`view.on(name, cb)` with `layout`, `history`, `select`, `selectionchange`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `animationend`, `contextmenu`, `expand`, `explore`.
+`view.on(name, cb)` with `layout`, `history`, `select`, `selectionchange`, `hover`, `nodeclick`, `edgeclick`, `groupclick`, `dragstart`, `drag`, `dragend`, `pin`, `change`, `viewport`, `animationend`, `contextmenu`, `expand`, `stack`, `unstack`, `explore`.
 
 ### Undo / redo
 
@@ -121,6 +121,35 @@ view.expand("api"); view.collapse("api"); view.toggleExpand("api"); view.isExpan
 ```
 
 Opt a node out with `expandable: false`, or start it open with `expanded: true`. The toggle text is `expandText` / `collapseText`.
+
+### Stacking (animated fold / unfold)
+
+A node can fold the nodes before or after it underneath itself, with an animation:
+
+```js
+const data = {
+  nodes: [
+    { id: "signed", label: "Contract signed", stackable: "upstream" },                  // can fold its whole history
+    { id: "delivery", label: "Delivery", stackable: "downstream", stacked: true },      // starts folded
+    // …
+  ],
+  edges: [ /* … */ ]
+};
+
+view.stack("signed");      // the previous nodes slide in underneath it; it shows a card stack and "+6"
+view.unstack("signed");    // they come back out from underneath and move to their places
+view.toggleStack("delivery"); view.isStacked("delivery"); view.getStacked("delivery"); view.unstackAll();
+
+view.addNodes({ nodes: [...], edges: [...] }, { from: "golive" });   // new nodes come out from underneath "golive"
+view.removeNodes(["a", "b"], { to: "c" });                          // nodes slide into "c" and disappear
+```
+
+- `stackable: "upstream"` folds every node that leads into this one; nodes that also lead somewhere else stay visible.
+- `stackable: "downstream"` (or `true`) folds everything after the node; nodes that are also reached from elsewhere stay visible.
+- A round toggle on the node edge shows `−`, or `+N` while folded. Lines into a stack are drawn dashed to the node that holds it.
+- The node you act on keeps its place on screen. Stacking is part of undo / redo and of `exportState()` / `importState()`.
+- `updateGraph(data, { from, to })` animates the same way; new nodes otherwise come out of their first existing predecessor.
+- Follows `animate: false` and `prefers-reduced-motion`.
 
 ### Explore mode (huge hierarchies)
 

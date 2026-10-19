@@ -46,6 +46,10 @@ export interface NodeSpec {
   expandable?: boolean;
   /** Start with the details open. */
   expanded?: boolean;
+  /** Show a +/− toggle that stacks the nodes before ("upstream") or after ("downstream", also `true`) this node under it. */
+  stackable?: boolean | 'upstream' | 'downstream';
+  /** Start with the stack folded (direction from `stackable`). */
+  stacked?: boolean;
   [key: string]: unknown;
 }
 
@@ -172,6 +176,7 @@ export interface ViewState {
   nodes: Record<string, { x: number; y: number; pinned: boolean }>;
   /** Exact edge lines as [x, y] points. Reused on import while the nodes still match, so lines come back as the user left them. */
   edges?: Record<string, [number, number][]>;
+  stacked?: [string, 'upstream' | 'downstream'][];
   transform: { x: number; y: number; k: number };
 }
 
@@ -200,6 +205,8 @@ export interface GraphEvents {
   viewport: { x: number; y: number; k: number };
   animationend: void;
   expand: { id: string; expanded: boolean; node: NodeSpec };
+  stack: { id: string; direction: 'upstream' | 'downstream'; stacked: string[] };
+  unstack: { id: string };
   /** Explore mode: the open path changed. */
   explore: { path: string[] };
   /** Right-click anywhere in the graph. Registering a listener suppresses the browser menu inside the graph. */
@@ -232,7 +239,7 @@ export interface GraphView {
   readonly ready: Promise<GraphView>;
   readonly options: GraphOptions;
   relayout(opts?: { animate?: boolean; fresh?: boolean }): Promise<GraphView>;
-  updateGraph(data: GraphData, opts?: { mode?: 'stable' | 'relayout'; animate?: boolean }): Promise<GraphView>;
+  updateGraph(data: GraphData, opts?: { mode?: 'stable' | 'relayout'; animate?: boolean; from?: string | Map<string, string>; to?: string | Map<string, string> }): Promise<GraphView>;
   setOptions(options: Partial<GraphOptions>, opts?: { relayout?: boolean }): Promise<GraphView>;
   exportState(): ViewState;
   importState(state: ViewState, opts?: { animate?: boolean; transform?: boolean }): Promise<GraphView>;
@@ -278,6 +285,19 @@ export interface GraphView {
   collapse(id: string): Promise<boolean>;
   toggleExpand(id: string): Promise<boolean>;
   isExpanded(id: string): boolean;
+  /** Fold nodes under `id` with an animation: they slide in underneath it; the node shows a card stack and "+N". */
+  stack(id: string, opts?: { direction?: 'upstream' | 'downstream'; animate?: boolean }): Promise<boolean>;
+  /** Unfold a stack: the nodes come back out from underneath `id`. */
+  unstack(id: string, opts?: { animate?: boolean }): Promise<boolean>;
+  toggleStack(id: string, opts?: { direction?: 'upstream' | 'downstream'; animate?: boolean }): Promise<boolean>;
+  unstackAll(opts?: { animate?: boolean }): Promise<GraphView>;
+  isStacked(id: string): boolean;
+  /** Ids folded under `id`, or every folded-away node when `id` is omitted. */
+  getStacked(id?: string): string[];
+  /** Add nodes/edges; the new nodes come out from underneath `from` (default: their first existing predecessor). */
+  addNodes(add: { nodes?: NodeSpec[]; edges?: EdgeSpec[]; groups?: GroupSpec[] }, opts?: { from?: string; animate?: boolean; mode?: 'stable' | 'relayout' }): Promise<GraphView>;
+  /** Remove nodes and their edges; they slide into `to` (default: their first remaining neighbour) and disappear. */
+  removeNodes(ids: string | string[], opts?: { to?: string; animate?: boolean; mode?: 'stable' | 'relayout' }): Promise<GraphView>;
   /** Explore mode: the open nodes, from a start node down. */
   getExplorePath(): string[];
   /** Explore mode: open a path (each id a child of the one before). [] shows only the start nodes. */

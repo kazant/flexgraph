@@ -107,12 +107,19 @@ $('relayout').onclick = () => timed(() => view.relayout());
 $('fitflow').onclick = () => { if (!view.fitFlow()) $('s-msg').textContent = 'Select a node first (click it), then press Fit flow'; };
 $('unpin').onclick = () => { view.unpinAll(); timed(() => view.relayout()); };
 $('add').onclick = () => {
-  const ids = data.nodes.map((n) => n.id);
-  const id = 'new' + ++added;
-  const target = ids[Math.floor(Math.random() * ids.length)];
-  data = { ...data, nodes: [...data.nodes, { id, label: 'New ' + added, width: 120, height: 44 }], edges: [...data.edges, { id: 'e-' + id, source: target, target: id }] };
-  timed(() => view.updateGraph(data, { mode: 'stable' }));
+  // three new nodes come out from underneath the selected node (or a random one)
+  const sel = view.getSelectedNodes ? view.getSelectedNodes()[0] : null;
+  const ids = data.nodes.map((n) => String(n.id));
+  const from = sel != null ? String(sel.id ?? sel) : ids[Math.floor(Math.random() * ids.length)];
+  const nodes = [], edges = [];
+  for (let i = 0; i < 3; i++) {
+    const id = 'new' + ++added;
+    nodes.push({ id, label: 'New ' + added, width: 120, height: 44 });
+    edges.push({ id: 'e-' + id, source: from, target: id });
+  }
+  timed(() => view.addNodes({ nodes, edges }, { from }).then(() => { data = view.data; }));
 };
+$('unstack').onclick = () => timed(() => view.unstackAll());
 $('state').onclick = () => { $('dlg-text').value = JSON.stringify(view.exportState(), null, 2); $('dlg').showModal(); };
 $('dlg-close').onclick = () => $('dlg').close();
 $('dlg-load').onclick = () => { try { view.importState(JSON.parse($('dlg-text').value)).then(stats); $('dlg').close(); } catch (e) { alert(e.message); } };

@@ -9,8 +9,10 @@ import { segmentHitsRect } from './routing/geometry.js';
 import { highlightSet } from './highlight.js';
 import { exploreIndex, exploreView, explorePathAfterClick, MORE_PREFIX } from './explore.js';
 import { VERSION } from './version.js';
+import { stackView, stackDirection } from './stack.js';
 import * as metrics from './metrics.js';
 
+export { stackView };
 export { normalizeGraph, computeLayout, routeEdges, edgePath, metrics, DEFAULT_OPTIONS, GraphValidationError, VERSION };
 
 /**
@@ -60,7 +62,18 @@ export class GraphView {
     this._explore = { path: [], shown: new Map() };
     this._undo = []; this._redo = []; this._recDepth = 0;
     for (const n of this.data.nodes || []) if (n && n.expanded) this.renderer.expanded.add(String(n.id));
+    this._stacked = new Map();   // owner id -> 'upstream' | 'downstream'
+    this._stackInfo = null;
+    this._seenStackFlag = new Set();
+    this._readStackFlags();
     if (this.options.controls) this._controls();
+    this._onStackClick = (ev) => {
+      const b = ev.target.closest && ev.target.closest('.fg-stack-toggle');
+      if (!b || !this.renderer.nodesLayer.contains(b)) return;
+      ev.stopPropagation();
+      this.toggleStack(b.dataset.fgStack);
+    };
+    this.renderer.viewport.addEventListener('click', this._onStackClick);
     this._detach = attachInteraction(this);
     this.ready = this._build({ mode: 'relayout', animate: false }).then(() => { this.fit(); return this; });
   }
@@ -81,15 +94,101 @@ export class GraphView {
     return this._record('update', () => this._updateGraph(data, opts));
   }
 
-  _updateGraph(data, { mode = 'stable', animate = this.options.animate } = {}) {
+  _updateGraph(data, { mode = 'stable', animate = this.options.animate, from = null, to = null } = {}) {
     this.data = data;
     const ids = new Set((data.nodes || []).map((n) => String(n.id)));
     for (const id of [...this.pins.keys()]) if (!ids.has(id)) this.pins.delete(id);
     for (const id of [...this.positions.keys()]) if (!ids.has(id)) this.positions.delete(id);
     for (const id of [...this.renderer.expanded]) if (!ids.has(id)) this.renderer.expanded.delete(id);
+    for (const id of [...this._stacked.keys()]) if (!ids.has(id)) this._stacked.delete(id);
+    this._readStackFlags();
     const cut = this._explore.path.findIndex((id) => !ids.has(id));
     if (cut >= 0) this._explore.path = this._explore.path.slice(0, cut);
-    return this._build({ mode, animate });
+    return this._build({ mode, animate, enterFrom: from, exitTo: to });
+  }
+
+  // ---- stacking (animated fold / unfold) ---------------------------------
+
+  /**
+   * Stack nodes under `id`: "upstream" folds everything that leads into the node, "downstream" everything
+   * after it (default: the node's `stackable` option, else downstream). The nodes slide in underneath it and
+   * the node shows a card stack with a "+N" toggle. The node keeps its place on screen.
+   * @returns {Promise<boolean>} false if the node does not exist
+   */
+  stack(id, { direction, animate = this.options.animate } = {}) {
+    id = String(id);
+    const node = (this.data.nodes || []).find((n) => String(n.id) === id);
+    if (!node) return Promise.resolve(false);
+    const dir = stackDirection(node, direction);
+    if (this._stacked.get(id) === dir) return Promise.resolve(true);
+    return this._record('stack', () => {
+      this._stacked.delete(id);
+      this._stacked.set(id, dir);
+      return this._relayoutKeeping(id, { animate }).then(() => {
+        this._emit('stack', { id, direction: dir, stacked: this.getStacked(id) });
+        return true;
+      });
+    });
+  }
+
+  /** Unstack: the nodes come back out from underneath `id` and move to their places. */
+  unstack(id, { animate = this.options.animate } = {}) {
+    id = String(id);
+    if (!this._stacked.has(id)) return Promise.resolve(false);
+    return this._record('unstack', () => {
+      this._stacked.delete(id);
+      return this._relayoutKeeping(id, { animate }).then(() => { this._emit('unstack', { id }); return true; });
+    });
+  }
+
+  toggleStack(id, opts) { return this.isStacked(id) ? this.unstack(id, opts) : this.stack(id, opts); }
+  isStacked(id) { return this._stacked.has(String(id)); }
+
+  /** Unstack every stacked node. */
+  unstackAll({ animate = this.options.animate } = {}) {
+    if (!this._stacked.size) return Promise.resolve(this);
+    return this._record('unstack', () => { this._stacked.clear(); return this._build({ mode: 'relayout', animate }); });
+  }
+
+  /** Ids of the nodes stacked under `id`, or of every stacked-away node when no id is given. */
+  getStacked(id) {
+    if (!this._stackInfo) return [];
+    return [...this._stackInfo.owner].filter(([, o]) => id == null || o === String(id)).map(([n]) => n);
+  }
+
+  /**
+   * Add nodes and edges with an animation: the new nodes come out from underneath `from`
+   * (default: their first existing predecessor). Existing nodes stay where they are.
+   */
+  addNodes({ nodes = [], edges = [], groups = [] } = {}, { from = null, animate = this.options.animate, mode = 'stable' } = {}) {
+    const data = {
+      ...this.data,
+      nodes: [...(this.data.nodes || []), ...nodes],
+      edges: [...(this.data.edges || []), ...edges],
+      groups: [...(this.data.groups || []), ...groups]
+    };
+    return this._record('add', () => this._updateGraph(data, { mode, animate, from }));
+  }
+
+  /** Remove nodes (and their edges) with an animation: they slide into `to` (default: their first remaining neighbour). */
+  removeNodes(ids, { to = null, animate = this.options.animate, mode = 'stable' } = {}) {
+    const del = new Set([].concat(ids).map(String));
+    const exitTo = new Map();
+    for (const id of del) {
+      let t = to != null ? String(to) : null;
+      if (!t) for (const e of this.data.edges || []) {
+        const s = String(e.source), d = String(e.target);
+        if (s === id && !del.has(d)) { t = d; break; }
+        if (d === id && !del.has(s)) { t = s; break; }
+      }
+      if (t) exitTo.set(id, t);
+    }
+    const data = {
+      ...this.data,
+      nodes: (this.data.nodes || []).filter((n) => !del.has(String(n.id))),
+      edges: (this.data.edges || []).filter((e) => !del.has(String(e.source)) && !del.has(String(e.target)))
+    };
+    return this._record('remove', () => this._updateGraph(data, { mode, animate, to: exitTo }));
   }
 
   setOptions(options, opts) {
@@ -114,7 +213,7 @@ export class GraphView {
     for (const [id, r] of this.positions) nodes[id] = { x: round(r.x), y: round(r.y), pinned: !!(this.pins.get(id)) };
     const edges = {};
     if (this.routing) for (const [id, p] of this.routing.paths) edges[id] = p.points.map((q) => [round2(q.x), round2(q.y)]);
-    return { version: 1, direction: this.options.direction, edgeRouting: this.routing?.mode, nodes, edges, transform: { ...this.renderer.transform } };
+    return { version: 1, direction: this.options.direction, edgeRouting: this.routing?.mode, nodes, edges, stacked: [...this._stacked], transform: { ...this.renderer.transform } };
   }
 
   /** Restore positions / pins saved with exportState(). */
@@ -124,6 +223,10 @@ export class GraphView {
   }
 
   _importState(state, { animate = this.options.animate, transform = true } = {}) {
+    if (Array.isArray(state.stacked) && JSON.stringify(state.stacked) !== JSON.stringify([...this._stacked])) {
+      this._stacked = new Map(state.stacked.map(([id, d]) => [String(id), d === 'upstream' ? 'upstream' : 'downstream']));
+      return this._build({ mode: 'relayout', animate: false }).then(() => this._importState({ ...state, stacked: undefined }, { animate, transform }));
+    }
     const from = this._snapshot();
     for (const [id, s] of Object.entries(state.nodes)) {
       const r = this.positions.get(id);
@@ -357,11 +460,11 @@ export class GraphView {
   /** @internal user input takes over from a running fit animation */
   _stopZoom() { if (this._zoomAnim && typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this._zoomAnim); this._zoomAnim = 0; }
 
-  _animateTransform(to, animate) {
+  _animateTransform(to, animate, dur = this.options.animationDuration) {
     this._stopZoom();
     const from = this.getTransform();
     if (!animate || reducedMotion() || typeof requestAnimationFrame === 'undefined') { this.setTransform(to); return; }
-    const dur = this.options.animationDuration, t0 = performance.now();
+    const t0 = performance.now();
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const step = (now) => {
       const t = Math.min(1, (now - t0) / dur), e = ease(t);
@@ -405,6 +508,8 @@ export class GraphView {
 
   destroy() {
     cancelAnimationFrame(this._anim);
+    if (this._animCleanup) this._animCleanup();
+    this.renderer.viewport.removeEventListener('click', this._onStackClick);
     this.container.classList.remove('fg-explore', 'fg-explore--blur');
     delete this.container.dataset.fgDirection;
     this._stopZoom();
@@ -421,6 +526,21 @@ export class GraphView {
 
   /** In explore mode only part of the data is laid out; this works out which part. */
   _refreshView() {
+    this._refreshExplore();
+    this._stackInfo = this._stacked?.size ? stackView(this._viewData, this._stacked) : null;
+    if (this._stackInfo) this._viewData = this._stackInfo.data;
+  }
+
+  _readStackFlags() {
+    for (const n of this.data.nodes || []) {
+      if (!n || !n.stacked) continue;
+      const id = String(n.id);
+      if (!this._seenStackFlag.has(id)) this._stacked.set(id, stackDirection(n));
+      this._seenStackFlag.add(id);
+    }
+  }
+
+  _refreshExplore() {
     if (!this.options.explore) { this._ex = null; this._viewData = this.data; return; }
     if (this._exIndexFor !== this.data) { this._exIndex = exploreIndex(this.data); this._exIndexFor = this.data; }
     const o = this.options;
@@ -431,10 +551,10 @@ export class GraphView {
   }
 
   /** Relayout, keeping one node at the same place on screen (and optionally bringing a node's children into view). */
-  async _relayoutKeeping(id, { animate = this.options.animate, reveal } = {}) {
+  async _relayoutKeeping(id, { animate = this.options.animate, reveal, ...extra } = {}) {
     const t = this.getTransform();
     const before = this.positions.get(id);
-    await this._build({ mode: 'relayout', animate });
+    await this._build({ mode: 'relayout', animate, ...extra });
     const after = this.positions.get(id);
     let to = t;
     if (before && after) to = { k: t.k, x: t.x - (after.x - before.x) * t.k, y: t.y - (after.y - before.y) * t.k };
@@ -444,7 +564,8 @@ export class GraphView {
       const fit = this._fitTransform(ids, { maxZoom: t.k });
       if (fit && fit.k >= t.k * 0.6 && !this._inView(ids, to)) to = fit;
     }
-    this._animateTransform(to, animate && !!before);
+    // same duration as the node animation, so the kept node really stays put
+    this._animateTransform(to, animate && !!before, this._presentDur);
     return this;
   }
 
@@ -488,10 +609,41 @@ export class GraphView {
     return p;
   }
 
-  async _buildNow({ mode, animate, fresh }) {
+  async _buildNow({ mode, animate, fresh, enterFrom = null, exitTo = null }) {
     const from = this._snapshot();
+    if (this._animCleanup) this._animCleanup();
+    const prevVisible = new Set(this.positions.keys());
+    const prevOwner = this._stackInfo ? this._stackInfo.owner : new Map();
+    const prevParent = this._ex ? this._ex.parentOf : null;
     this._refreshView();
     this._exploreChrome();
+    const visible = new Set((this._viewData.nodes || []).map((n) => String(n.id)));
+    for (const id of [...this.positions.keys()]) if (!visible.has(id)) this.positions.delete(id);
+
+    // nodes leaving the view are kept as ghosts that slide into the node they are folded under
+    const exits = new Map();
+    for (const id of prevVisible) {
+      if (visible.has(id)) continue;
+      const el = this.renderer.nodeEls.get(id);
+      if (!el) continue;
+      this.renderer.nodeEls.delete(id);
+      const owner = (exitTo instanceof Map ? exitTo.get(id) : exitTo) ?? this._stackInfo?.owner.get(id) ?? prevParent?.get(id) ?? null;
+      exits.set(id, { el, owner: owner != null ? String(owner) : null });
+    }
+    // nodes entering the view come out from underneath a node that was already there
+    const enters = new Map();
+    if (prevVisible.size) {
+      const edges = this._viewData.edges || [];
+      for (const id of visible) {
+        if (prevVisible.has(id)) continue;
+        let origin = (enterFrom instanceof Map ? enterFrom.get(id) : enterFrom) ?? prevOwner.get(id) ?? this._ex?.parentOf.get(id) ??
+          (id.startsWith(MORE_PREFIX) ? id.slice(MORE_PREFIX.length) : null);
+        if (origin == null) for (const e of edges) { if (String(e.target) === id && prevVisible.has(String(e.source))) { origin = e.source; break; } }
+        if (origin == null) for (const e of edges) { if (String(e.source) === id && prevVisible.has(String(e.target))) { origin = e.target; break; } }
+        enters.set(id, origin != null && prevVisible.has(String(origin)) ? String(origin) : null);
+      }
+    }
+
     let model = this._prepareModel();
     let layout;
     const hadPositions = this.positions.size > 0;
@@ -508,6 +660,8 @@ export class GraphView {
       model = this._prepareModel();
     } else {
       const hints = fresh || !hadPositions ? null : new Map([...this.positions].map(([id, r]) => [id, { x: r.x + r.width / 2, y: r.y + r.height / 2 }]));
+      // new nodes start next to where they come from, so the layout keeps them close to it
+      if (hints) for (const [id, o] of enters) { const r = o && this.positions.get(o); if (r) hints.set(id, { x: r.x + r.width / 2, y: r.y + r.height / 2 }); }
       layout = computeLayout(model, { hints });
     }
 
@@ -516,7 +670,8 @@ export class GraphView {
     this.layoutEdges = layout.edges;
     this.routing = layout.routing || routeEdges(model, { nodes: this.positions, edges: this.layoutEdges });
     this.renderer.renderPorts(model);
-    this._present(hadPositions ? from : null, animate);
+    this._renderStacks();
+    this._present(hadPositions || exits.size ? from : null, animate, { enters, exits });
     this._pruneSelection();
     this._emit('layout', { crossings: layout.crossings });
     return this;
@@ -609,28 +764,75 @@ export class GraphView {
     });
   }
 
-  _present(from, animate) {
+  _renderStacks() {
+    this.renderer.renderStacks(this.model, { stacked: this._stacked, counts: this._stackInfo ? this._stackInfo.counts : new Map() });
+  }
+
+  // enters: new node id -> id of the node it comes out from (or null: fade in on the spot)
+  // exits:  removed node id -> { el, owner }: its element slides into `owner` (or fades on the spot)
+  _present(from, animate, { enters = new Map(), exits = new Map() } = {}) {
     cancelAnimationFrame(this._anim);
-    if (!from || !animate || reducedMotion() || !from.routing) { this._render(); return; }
+    const touched = new Set();
+    const cleanup = () => {
+      this._animCleanup = null;
+      for (const { el } of exits.values()) el.remove();
+      for (const el of touched) { el.style.opacity = ''; el.style.scale = ''; el.style.zIndex = ''; el.style.pointerEvents = ''; }
+    };
+    this._animCleanup = cleanup;
+    this._presentDur = this.options.animationDuration;
+    if (!from || !animate || reducedMotion() || !from.routing) { cleanup(); this._render(); return; }
     const to = this.positions;
-    const dur = this.options.animationDuration;
+    const els = this.renderer.nodeEls;
+    const dur = this.options.animationDuration * (enters.size || exits.size ? 1.5 : 1);
+    this._presentDur = dur;
     const t0 = performance.now();
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const mid = (r) => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 });
+    // the node things come out of / go into stays on top; the moving nodes pass underneath it
+    const owners = new Set([...enters.values(), ...[...exits.values()].map((x) => x.owner)].filter(Boolean));
+    for (const id of owners) { const el = els.get(id); if (el) { el.style.zIndex = '3'; touched.add(el); } }
+    for (const id of enters.keys()) { const el = els.get(id); if (el) { el.style.zIndex = '1'; el.style.pointerEvents = 'none'; touched.add(el); } }
+    for (const { el } of exits.values()) { el.style.zIndex = '1'; el.style.pointerEvents = 'none'; el.classList.remove('fg-hl', 'fg-selected'); }
     const frame = (now) => {
       const t = Math.min(1, (now - t0) / dur);
-      if (t >= 1) { this._render(); this._emit('animationend'); return; }
+      if (t >= 1) { cleanup(); this._render(); this._emit('animationend'); return; }
       const e = ease(t);
       const cur = new Map();
       for (const [id, r] of to) {
-        // in explore mode new children grow out of their parent
-        const parent = this._ex?.parentOf.get(id) ?? (id.startsWith(MORE_PREFIX) ? id.slice(MORE_PREFIX.length) : null);
-        const a = from.positions.get(id) || (parent != null && from.positions.get(parent)) || r;
+        if (enters.has(id)) continue;
+        const a = from.positions.get(id) || r;
         cur.set(id, { x: a.x + (r.x - a.x) * e, y: a.y + (r.y - a.y) * e, width: r.width, height: r.height });
       }
+      for (const [id, origin] of enters) {
+        const r = to.get(id);
+        if (!r) continue;
+        const o = origin && (cur.get(origin) || from.positions.get(origin));
+        const c = o ? mid(o) : mid(r);
+        const sx = c.x - r.width / 2, sy = c.y - r.height / 2;
+        cur.set(id, { x: sx + (r.x - sx) * e, y: sy + (r.y - sy) * e, width: r.width, height: r.height });
+        const el = els.get(id);
+        if (el) { el.style.opacity = String(Math.min(1, e * 1.6)); el.style.scale = String(0.7 + 0.3 * e); }
+      }
       this.renderer.placeNodes(this.model, cur);
+      for (const [id, { el, owner }] of exits) {
+        const a = from.positions.get(id);
+        if (!a) continue;
+        const o = owner && cur.get(owner);
+        const c = o ? mid(o) : mid(a);
+        const tx = c.x - a.width / 2, ty = c.y - a.height / 2;
+        el.style.transform = `translate(${a.x + (tx - a.x) * e}px, ${a.y + (ty - a.y) * e}px)`;
+        el.style.opacity = String(o ? Math.max(0, 1 - e * 1.2) : 1 - e);
+        el.style.scale = String(1 - 0.3 * e);
+      }
       this._groups = computeGroupBoxes(this.model, { nodes: cur });
       this.renderer.renderGroups(this.model, this._groups);
-      this.renderer.renderEdges(this.model, this.routing, interpolatePaths(from.routing.paths, this.routing.paths, e));
+      // new lines grow from the moving node centres
+      const startFor = (eid) => {
+        const ed = this.model.edgeById.get(eid);
+        const a = ed && cur.get(ed.source), b = ed && cur.get(ed.target);
+        return a && b ? [mid(a), mid(b)] : null;
+      };
+      this.renderer.renderEdges(this.model, this.routing, interpolatePaths(from.routing.paths, this.routing.paths, e, 28, startFor));
       this._anim = requestAnimationFrame(frame);
     };
     this._anim = requestAnimationFrame(frame);
@@ -800,6 +1002,7 @@ export class GraphView {
       positions: new Map([...this.positions].map(([id, r]) => [id, { ...r }])),
       pins: new Map([...this.pins].map(([id, q]) => [id, { ...q }])),
       expanded: [...this.renderer.expanded],
+      stacked: [...(this._stacked || [])],
       layoutEdges: new Map([...this.layoutEdges].map(([id, e]) => [id, { ...e, waypoints: (e.waypoints || []).map((q) => ({ ...q })) }])),
       edges
     };
@@ -824,6 +1027,7 @@ export class GraphView {
     for (const k of changed) this.userOptions[k] = snap.opts[k];
     if (changed.length) { this.options = resolveOptions(this.data.options, this.userOptions); this.renderer.options = this.options; }
     this.renderer.expanded = new Set(snap.expanded);
+    this._stacked = new Map(snap.stacked || []);
     // explore navigation is not part of the history: keep the open path (minus nodes the old data lacks)
     const ids = new Set((this.data.nodes || []).map((n) => String(n.id)));
     const cut = this._explore.path.findIndex((id) => !ids.has(id));
@@ -841,6 +1045,7 @@ export class GraphView {
       this.routing = routeEdges(this.model, { nodes: this.positions, edges: this.layoutEdges });
       applySavedRoutes(this.model, this.routing, this.positions, snap.edges);
       this.renderer.renderPorts(this.model);
+      this._renderStacks();
       this._present(from, this.options.animate);
     }
     this._pruneSelection();

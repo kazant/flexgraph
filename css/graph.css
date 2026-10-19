@@ -317,3 +317,47 @@
   .fg-node, .fg-edge__line, .fg-node__toggle svg { transition: none; }
   .fg-explore .fg-node { animation: none; }
 }
+
+/* ---- stacking: nodes folded under another node ---------------------------- */
+
+/* stacked cards peeking out behind a node that holds a stack */
+.fg-stack {
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: var(--fg-node-radius);
+  pointer-events: none;
+  box-shadow: 5px 5px 0 -1px var(--fg-node-bg), 5px 5px 0 0 var(--fg-node-border);
+}
+.fg-stack--many {
+  box-shadow:
+    5px 5px 0 -1px var(--fg-node-bg), 5px 5px 0 0 var(--fg-node-border),
+    10px 10px 0 -1px var(--fg-node-bg), 10px 10px 0 0 var(--fg-node-border);
+}
+
+/* the round +/− toggle on the node edge (upstream: entry side, downstream: exit side) */
+.fg-stack-toggle {
+  position: absolute;
+  z-index: 2;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--fg-node-border);
+  border-radius: 999px;
+  background: var(--fg-node-bg);
+  color: var(--fg-node-text);
+  font: 600 11px/18px system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: var(--fg-node-shadow);
+  transform: translate(-50%, -50%);
+}
+.fg-stack-toggle:hover, .fg-stack-toggle:focus-visible { border-color: var(--fg-accent); color: var(--fg-accent); outline: none; }
+.fg-stack-toggle--stacked { background: var(--fg-accent); border-color: var(--fg-accent); color: #fff; }
+.fg-stack-toggle--stacked:hover, .fg-stack-toggle--stacked:focus-visible { color: #fff; filter: brightness(1.1); }
+.fg-stack-toggle--top { left: calc(100% - 14px); top: 0; }
+.fg-stack-toggle--bottom { left: calc(100% - 14px); top: 100%; }
+.fg-stack-toggle--left { left: 0; top: calc(100% - 10px); }
+.fg-stack-toggle--right { left: 100%; top: calc(100% - 10px); }
+
+/* lines into a stack are drawn to the node that holds it */
+.fg-edge--proxy .fg-edge__line { stroke-dasharray: 5 4; }

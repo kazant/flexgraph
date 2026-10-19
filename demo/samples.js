@@ -119,4 +119,25 @@ export function large(seed = 3, count = 150, extra = 60) {
   return { options: { direction: 'TB', rankSpacing: 60, nodeSpacing: 24 }, nodes, edges };
 }
 
-export const SAMPLES = { erd, tree, dense, cycles, grouped, large };
+/** Stacking: "Contract signed" can fold its history, "Delivery" its follow-up steps (+/− buttons). */
+export function stacking() {
+  const n = (id, label, extra = {}) => ({ id, label, width: 130, height: 44, ...extra });
+  return {
+    options: { direction: 'LR' },
+    nodes: [
+      n('lead', 'Lead'), n('call', 'Discovery call'), n('demo', 'Demo'), n('trial', 'Trial'),
+      n('proposal', 'Proposal'), n('legal', 'Legal review'),
+      n('signed', 'Contract signed', { stackable: 'upstream' }),
+      n('delivery', 'Delivery', { stackable: 'downstream' }),
+      n('kickoff', 'Kick-off'), n('setup', 'Setup'), n('training', 'Training'), n('golive', 'Go-live'),
+      n('invoice', 'Invoice')
+    ],
+    edges: [
+      ['lead', 'call'], ['call', 'demo'], ['call', 'trial'], ['demo', 'proposal'], ['trial', 'proposal'],
+      ['proposal', 'legal'], ['legal', 'signed'], ['proposal', 'signed'], ['signed', 'delivery'], ['signed', 'invoice'],
+      ['delivery', 'kickoff'], ['kickoff', 'setup'], ['kickoff', 'training'], ['setup', 'golive'], ['training', 'golive']
+    ].map(([s, t]) => ({ id: s + '-' + t, source: s, target: t }))
+  };
+}
+
+export const SAMPLES = { erd, tree, dense, cycles, grouped, large, stacking };

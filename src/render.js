@@ -1,6 +1,6 @@
 // DOM + SVG rendering. Nodes are HTML divs, edges live in one SVG layer.
 
-import { NORMALS, resample, portRelPositions } from './routing/geometry.js';
+import { NORMALS, resample, portRelPositions, flowOf } from './routing/geometry.js';
 import { placeLabels } from './labels.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -47,6 +47,8 @@ export class Renderer {
     this.nodesLayer = el('div', 'fg-nodes');
     this.world.append(this.groupsLayer, this.svg, this.labelsLayer, this.nodesLayer);
     vp.appendChild(this.world);
+    // focusing a button inside a node must not scroll the clipped viewport (panning uses transforms)
+    vp.addEventListener('scroll', () => { if (vp.scrollTop || vp.scrollLeft) { vp.scrollTop = 0; vp.scrollLeft = 0; } });
     container.appendChild(vp);
     this.nodeEls = new Map();
     this.edgeEls = new Map();
@@ -142,6 +144,44 @@ export class Renderer {
       if (b.textContent !== spec.text) b.textContent = spec.text;
       b.classList.toggle('fg-node__badge--open', !!spec.open);
       b.title = spec.title || '';
+    }
+  }
+
+  /**
+   * Stacking decorations: the +/- stack toggle, the stacked-cards look and the hidden count.
+   * @param {object} model
+   * @param {{stacked: Map<string,string>, counts: Map<string,number>}} info
+   */
+  renderStacks(model, info) {
+    const flow = flowOf(model.options.direction);
+    for (const n of model.nodes) {
+      const e = this.nodeEls.get(n.id);
+      if (!e) continue;
+      e.querySelectorAll(':scope > .fg-stack-toggle, :scope > .fg-stack').forEach((x) => x.remove());
+      const stackable = n.data.stackable;
+      const dir = info.stacked.get(n.id) || (stackable ? (stackable === 'upstream' ? 'upstream' : 'downstream') : null);
+      const count = info.counts.get(n.id) || 0;
+      const isStacked = info.stacked.has(n.id) && count > 0;
+      e.classList.toggle('fg-node--stacked', isStacked);
+      e.classList.toggle('fg-node--stacked-upstream', isStacked && dir === 'upstream');
+      if (isStacked) {
+        const st = el('div', 'fg-stack fg-stack--' + (count > 1 ? 'many' : 'one'));
+        st.setAttribute('aria-hidden', 'true');
+        e.appendChild(st);
+      }
+      if (!dir || (!stackable && !info.stacked.has(n.id))) continue;
+      const side = dir === 'upstream' ? flow.entry : flow.exit;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fg-stack-toggle fg-stack-toggle--' + side + (isStacked ? ' fg-stack-toggle--stacked' : '');
+      b.dataset.fgStack = n.id;
+      b.setAttribute('aria-expanded', String(!isStacked));
+      const what = dir === 'upstream' ? 'previous' : 'following';
+      const label = isStacked ? `Unstack ${count} ${what} node${count === 1 ? '' : 's'}` : `Stack the ${what} nodes`;
+      b.setAttribute('aria-label', label);
+      b.title = label;
+      b.textContent = isStacked ? '+' + count : '\u2212';
+      e.appendChild(b);
     }
   }
 
@@ -405,13 +445,14 @@ function curvedD(p) {
 }
 
 /** Interpolate between two routings for animations. */
-export function interpolatePaths(from, to, t, samples = 28) {
+export function interpolatePaths(from, to, t, samples = 28, startFor = null) {
   const out = new Map();
   for (const [id, p] of to) {
     const a = from && from.get(id);
     const B = resample(p.points, samples);
-    if (!a) { out.set(id, B); continue; }
-    const A = resample(a.points, samples);
+    const startPts = a ? a.points : startFor ? startFor(id) : null;
+    if (!startPts) { out.set(id, B); continue; }
+    const A = resample(startPts, samples);
     out.set(id, B.map((b, i) => ({ x: A[i].x + (b.x - A[i].x) * t, y: A[i].y + (b.y - A[i].y) * t })));
   }
   return out;

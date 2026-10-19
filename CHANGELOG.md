@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Stacking (animated fold / unfold): `stackable: "upstream" | "downstream"` and `stacked` node options, `view.stack(id)`,
+  `unstack`, `toggleStack`, `unstackAll`, `isStacked`, `getStacked`, and `stack` / `unstack` events. Folded nodes
+  slide in underneath their node, which shows a card stack and a `+N` toggle; unfolding brings them back out from
+  underneath. Lines into a stack are redirected (dashed) to the node that holds it. Part of undo / redo and of
+  `exportState()` / `importState()`.
+- `view.addNodes(..., { from })` and `view.removeNodes(ids, { to })`: new nodes come out from underneath a node,
+  removed nodes slide into one. `updateGraph(data, { from, to })` does the same.
+- Nodes that appear in any update now come out of the node they belong to (their first existing predecessor), and
+  nodes that disappear fade out, instead of popping in and out.
+
+### Fixed
+- Focusing a button inside a node no longer scrolls the viewport.
+- When a relayout keeps a node in place, the view now pans in step with the node animation.
+
 ## [1.2.0] — 2026-10-12
 
 ### Added
